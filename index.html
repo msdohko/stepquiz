@@ -139,12 +139,13 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
   font-family:var(--body); font-size:13px; color:var(--stamp-red); font-weight:600;
   margin-top:10px; display:none;
 }
-.tabs{ display:flex; gap:6px; margin-bottom:18px; background:rgba(255,255,255,0.05); padding:4px; border-radius:10px; }
+.tabs{ display:flex; gap:6px; margin-bottom:18px; background:var(--paper-dim); padding:5px; border-radius:12px; border:1px solid var(--line); }
 .tab{
-  flex:1; text-align:center; padding:9px 6px; border-radius:7px; font-family:var(--mono); font-size:11.5px;
-  letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; color:var(--silver); font-weight:600;
+  flex:1; text-align:center; padding:11px 6px; border-radius:9px; font-family:var(--body); font-size:13px;
+  letter-spacing:0.2px; cursor:pointer; color:var(--ink-soft); font-weight:700;
+  transition: background .15s ease, color .15s ease, box-shadow .15s ease;
 }
-.tab.active{ background:var(--paper); color:var(--ink); }
+.tab.active{ background:var(--brand-green); color:#fff; box-shadow:0 2px 8px rgba(31,122,77,0.35); }
 .auth-switch{ text-align:center; font-family:var(--body); font-size:13.5px; color:var(--ink-soft); margin-top:16px; }
 .link-inline{ background:none; border:none; padding:0; font-family:var(--body); font-size:13.5px; font-weight:700; color:var(--brand-green); cursor:pointer; text-decoration:underline; }
 .auth-spacer{ height:80px; }
@@ -167,11 +168,16 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .heart{ font-size:26px; color:var(--stamp-red); line-height:1; transition:transform .25s ease; }
 .heart.lost{ color:var(--line); transform:scale(0.9); }
 .ranking-box{
-  margin-top:16px; border:1.5px solid var(--line); border-radius:12px; padding:12px 14px;
-  cursor:pointer; background:rgba(255,255,255,0.5);
+  margin-top:16px; border:1.5px solid var(--brand-green); border-radius:12px; padding:12px 14px;
+  cursor:pointer; background:#EAF5EE;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
 }
-.ranking-box-label{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-soft); margin-bottom:4px; }
-.ranking-box-content{ font-family:var(--body); font-size:14px; color:var(--ink); line-height:1.9; }
+.ranking-box:active{ background:#DCEEE2; }
+.ranking-box-text{ min-width:0; }
+.ranking-box-label{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--brand-green); margin-bottom:4px; font-weight:700; }
+.ranking-box-content{ font-family:var(--body); font-size:14px; color:var(--ink); line-height:1.7; }
+.ranking-box-cta{ font-family:var(--body); font-size:11.5px; color:var(--brand-green); font-weight:700; margin-top:2px; }
+.ranking-box-arrow{ font-size:20px; color:var(--brand-green); flex-shrink:0; }
 .home-actions{ margin-top:18px; display:flex; flex-direction:column; gap:10px; }
 .link-row{ display:flex; justify-content:space-between; margin-top:16px; }
 .link-row a, .link-btn{ font-family:var(--mono); font-size:11.5px; color:var(--silver); letter-spacing:0.5px; text-transform:uppercase; text-decoration:none; cursor:pointer; background:none; border:none; padding:0; }
@@ -349,8 +355,12 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       </div>
 
       <div class="ranking-box" id="rankingPreviewBox" onclick="showRanking()">
-        <div class="ranking-box-label">Ranking</div>
-        <div class="ranking-box-content" id="rankingPreviewContent">Toque para ver o pódio</div>
+        <div class="ranking-box-text">
+          <div class="ranking-box-label">Ranking</div>
+          <div class="ranking-box-content" id="rankingPreviewContent">Toque para ver o pódio</div>
+          <div class="ranking-box-cta">Ver pódio completo</div>
+        </div>
+        <div class="ranking-box-arrow">›</div>
       </div>
 
       <div class="home-actions">
@@ -403,8 +413,8 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <div class="card-logo"></div>
       <div class="ledger-tab">Ranking</div>
       <div class="tabs">
-        <div class="tab active" id="rankTabIndividual" onclick="setRankMode('individual')">Individual</div>
-        <div class="tab" id="rankTabTeam" onclick="setRankMode('team')">Por equipe</div>
+        <div class="tab active" id="rankTabIndividual" onclick="setRankMode('individual')">👤 Individual</div>
+        <div class="tab" id="rankTabTeam" onclick="setRankMode('team')">🏢 Por equipe</div>
       </div>
       <div id="rankingContent"><div class="loading-row">Carregando…</div></div>
       <button class="btn btn-outline mt20" onclick="backToHome()">Voltar</button>
