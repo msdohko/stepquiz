@@ -247,6 +247,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .pod-col.p2 .pod-rank{ color:var(--silver); }
 .pod-col.p3 .pod-rank{ color:var(--bronze); }
 .pod-name{ font-family:var(--body); font-size:11.5px; font-weight:700; margin-top:4px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pod-team{ font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color:var(--gold); margin-top:1px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .pod-score{ font-family:var(--mono); font-size:10.5px; color:var(--silver); margin-top:2px; }
 .pod-base{ height:8px; background:var(--gold); border-radius:0 0 6px 6px; }
 .pod-col.p2 .pod-base{ background:var(--silver); }
@@ -815,7 +816,7 @@ async function openHome(){
   } else {
     const medals = ['🥇','🥈','🥉'];
     rpContent.innerHTML = sorted.slice(0,3).map(([name,data],i)=>
-      medals[i] + ' <b>' + escapeHtml(name) + '</b> — ' + (data.scoreTotal||0) + ' pts'
+      medals[i] + ' <b>' + escapeHtml(name) + '</b> · ' + escapeHtml(data.team||'') + ' — ' + (data.scoreTotal||0) + ' pts'
     ).join('<br>');
   }
 
@@ -1049,9 +1050,11 @@ function renderRanking(){
     const e = top3[idx];
     if(!e){ podiumHtml += '<div class="pod-col"></div>'; return; }
     const cls = idx===0 ? 'p1' : (idx===1 ? 'p2' : 'p3');
+    const teamLine = (rankMode==='individual' && e.team) ? '<div class="pod-team">' + escapeHtml(e.team) + '</div>' : '';
     podiumHtml += '<div class="pod-col ' + cls + '">' +
       '<div class="pod-tab"><div class="pod-rank">' + (idx+1) + '</div>' +
       '<div class="pod-name">' + escapeHtml(e.name) + '</div>' +
+      teamLine +
       '<div class="pod-score">' + e.score + ' pts</div></div>' +
       '<div class="pod-base"></div></div>';
   });
