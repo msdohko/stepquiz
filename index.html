@@ -864,9 +864,11 @@ async function openHome(){
     rpContent.textContent = 'Ninguém pontuou ainda — seja o primeiro!';
   } else {
     const medals = ['🥇','🥈','🥉'];
-    rpContent.innerHTML = sorted.slice(0,3).map(([name,data],i)=>
-      medals[i] + ' <b>' + escapeHtml(data.displayName||name) + '</b> · ' + escapeHtml(data.team||'') + ' — ' + (data.scoreTotal||0) + ' pts'
-    ).join('<br>');
+    const top3 = sorted.slice(0,3);
+    rpContent.innerHTML = top3.map(([name,data],i)=>{
+      const medal = (i>0 && data.scoreTotal === top3[i-1][1].scoreTotal) ? medals[i-1] : medals[i];
+      return medal + ' <b>' + escapeHtml(data.displayName||name) + '</b> · ' + escapeHtml(data.team||'') + ' — ' + (data.scoreTotal||0) + ' pts';
+    }).join('<br>');
   }
 
   const usedToday = (u.attempts && u.attempts[todayStr()]) || 0;
@@ -1091,6 +1093,12 @@ function renderRanking(){
     return;
   }
 
+  // posição real considerando empates: pontuação igual = mesma posição
+  const ranks = [];
+  for(let i=0;i<entries.length;i++){
+    ranks.push(i>0 && entries[i].score === entries[i-1].score ? ranks[i-1] : i+1);
+  }
+
   const top3 = entries.slice(0,3);
   const rest = entries.slice(3);
   const order = [1,0,2]; // 2nd, 1st, 3rd visual order
@@ -1101,7 +1109,7 @@ function renderRanking(){
     const cls = idx===0 ? 'p1' : (idx===1 ? 'p2' : 'p3');
     const teamLine = (rankMode==='individual' && e.team) ? '<div class="pod-team">' + escapeHtml(e.team) + '</div>' : '';
     podiumHtml += '<div class="pod-col ' + cls + '">' +
-      '<div class="pod-tab"><div class="pod-rank">' + (idx+1) + '</div>' +
+      '<div class="pod-tab"><div class="pod-rank">' + ranks[idx] + '</div>' +
       '<div class="pod-name">' + escapeHtml(e.displayName || e.name) + '</div>' +
       teamLine +
       '<div class="pod-score">' + e.score + ' pts</div></div>' +
@@ -1112,9 +1120,9 @@ function renderRanking(){
   wrap.innerHTML = podiumHtml;
 
   if(rankMode === 'individual'){
-    const myPos = entries.findIndex(e=>e.name===currentUser) + 1;
-    if(myPos > 3){
-      wrap.innerHTML += '<div class="my-pos-note">Você está na posição <b>#' + myPos + '</b> — chegue ao top 3 pra aparecer aqui!</div>';
+    const myIdx = entries.findIndex(e=>e.name===currentUser);
+    if(myIdx >= 3){
+      wrap.innerHTML += '<div class="my-pos-note">Você está na posição <b>#' + ranks[myIdx] + '</b> — chegue ao top 3 pra aparecer aqui!</div>';
     }
   }
 
@@ -1123,7 +1131,7 @@ function renderRanking(){
     rest.forEach((e,i)=>{
       const isMe = rankMode==='individual' && e.name === currentUser;
       listHtml += '<div class="rank-row' + (isMe ? ' me' : '') + '">' +
-        '<div class="rank-pos">#' + (i+4) + '</div>' +
+        '<div class="rank-pos">#' + ranks[i+3] + '</div>' +
         '<div class="rank-info"><div class="rank-name">' + escapeHtml(e.displayName || e.name) + '</div>' +
         (rankMode==='individual' ? '<div class="rank-team">' + escapeHtml(e.team||'') + '</div>' : '') +
         '</div><div class="rank-score">' + e.score + '</div></div>';
