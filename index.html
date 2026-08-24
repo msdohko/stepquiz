@@ -113,6 +113,7 @@ label{
   color: var(--ink-soft); margin-bottom:6px; margin-top:14px;
 }
 label:first-of-type{ margin-top:0; }
+.field-hint{ font-family:var(--body); font-size:11.5px; color:var(--ink-soft); margin:5px 0 0; }
 input[type=text], input[type=password], select, textarea{
   width:100%; padding:12px 13px; border-radius:9px; border:1.5px solid var(--line);
   font-family:var(--body); font-size:15px; background:#fff; color:var(--ink);
@@ -275,6 +276,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .user-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding:10px 0; }
 .user-row .u-info{ min-width:0; }
 .user-row .u-name{ font-weight:700; font-size:14px; }
+.user-row .u-username{ font-family:var(--mono); font-weight:400; font-size:11px; color:var(--ink-soft); }
 .user-row .u-meta{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-top:2px; }
 
 .opt-input-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
@@ -311,15 +313,24 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <div class="ledger-tab hidden" id="authTab">Cadastro</div>
       <div class="auth-spacer" id="authSpacer"></div>
 
-      <label>Nome de usuário</label>
-      <input type="text" id="authUser" autocomplete="username">
+      <div id="nameFields" class="hidden">
+        <label>Primeiro nome</label>
+        <input type="text" id="authFirstName" autocomplete="given-name" placeholder="Ex: Eduardo" oninput="updateUsernameSuggestion()">
+
+        <label>Sobrenome</label>
+        <input type="text" id="authLastName" autocomplete="family-name" placeholder="Ex: Silva" oninput="updateUsernameSuggestion()">
+      </div>
+
+      <label id="authUsernameLabel">Usuário</label>
+      <input type="text" id="authUsername" autocomplete="username" placeholder="Ex: eduardo silva" oninput="this.dataset.touched='1'">
+      <p class="field-hint hidden" id="usernameHint">Preenchido automático com seu nome — pode editar se preferir.</p>
 
       <label>Senha</label>
-      <input type="password" id="authPass" autocomplete="current-password">
+      <input type="password" id="authPass" autocomplete="current-password" placeholder="Mínimo 4 caracteres" minlength="4">
 
       <div id="teamField" class="hidden">
         <label>Equipe</label>
-        <input type="text" id="authTeam" style="text-transform:uppercase;">
+        <input type="text" id="authTeam" style="text-transform:uppercase;" placeholder="Ex: Segurança, Manutenção...">
       </div>
 
       <div class="error-msg" id="authError"></div>
@@ -693,6 +704,13 @@ function setAuthMode(mode){
   authMode = mode;
   document.getElementById('authTab').classList.toggle('hidden', mode!=='register');
   document.getElementById('teamField').classList.toggle('hidden', mode!=='register');
+  document.getElementById('nameFields').classList.toggle('hidden', mode!=='register');
+  document.getElementById('usernameHint').classList.toggle('hidden', mode!=='register');
+  const usernameEl = document.getElementById('authUsername');
+  usernameEl.dataset.touched = '0';
+  usernameEl.value = '';
+  document.getElementById('authFirstName').value = '';
+  document.getElementById('authLastName').value = '';
   const btn = document.getElementById('authSubmitBtn');
   btn.textContent = mode==='login' ? 'ENTRAR' : 'Criar cadastro';
   btn.classList.toggle('btn-auth-submit', mode==='login');
@@ -701,6 +719,23 @@ function setAuthMode(mode){
     ? 'Primeiro acesso? <button class="link-inline" id="authSwitchBtn" onclick="setAuthMode(\'register\')">Cadastre-se aqui</button>'
     : 'Já tem conta? <button class="link-inline" id="authSwitchBtn" onclick="setAuthMode(\'login\')">Entrar</button>';
   document.getElementById('authError').style.display = 'none';
+  if(mode === 'register'){ loadUsers().catch(()=>{}); }
+}
+
+function normalizeForUsername(s){
+  return (s||'').trim().replace(/\s+/g,' ').toLowerCase();
+}
+function updateUsernameSuggestion(){
+  const un = document.getElementById('authUsername');
+  if(un.dataset.touched === '1') return;
+  const first = document.getElementById('authFirstName').value.trim();
+  const last = document.getElementById('authLastName').value.trim();
+  const base = normalizeForUsername(last ? (first + ' ' + last) : first);
+  if(!base){ un.value = ''; return; }
+  if(!findUserKey(base)){ un.value = base; return; }
+  let n = 1;
+  while(findUserKey(base + ' ' + String(n).padStart(2,'0'))){ n++; }
+  un.value = base + ' ' + String(n).padStart(2,'0');
 }
 
 function findUserKey(username){
@@ -711,12 +746,24 @@ function findUserKey(username){
 async function submitAuth(){
   const errEl = document.getElementById('authError');
   errEl.style.display = 'none';
-  const username = document.getElementById('authUser').value.trim();
+  const firstName = document.getElementById('authFirstName').value.trim();
+  const lastName = document.getElementById('authLastName').value.trim();
+  const username = document.getElementById('authUsername').value.trim();
   const pass = document.getElementById('authPass').value;
   const team = document.getElementById('authTeam').value.trim();
 
+  if(authMode === 'register' && !firstName){
+    errEl.textContent = 'Preencha ao menos o primeiro nome.';
+    errEl.style.display = 'block';
+    return;
+  }
   if(!username || !pass){
     errEl.textContent = 'Preencha usuário e senha.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(authMode === 'register' && pass.length < 4){
+    errEl.textContent = 'A senha precisa ter no mínimo 4 caracteres.';
     errEl.style.display = 'block';
     return;
   }
@@ -733,11 +780,12 @@ async function submitAuth(){
         return;
       }
       if(findUserKey(username)){
-        errEl.textContent = 'Esse nome de usuário já existe. Tente entrar ou escolha outro nome.';
+        errEl.textContent = 'Esse usuário já existe. Escolha outro nome de usuário ou toque em Entrar.';
         errEl.style.display = 'block';
         return;
       }
-      usersCache[username] = { password: pass, team: team.toUpperCase(), scoreTotal: 0, quizzesTaken: 0, attempts: {}, createdAt: Date.now() };
+      const displayName = lastName ? (firstName + ' ' + lastName) : firstName;
+      usersCache[username] = { password: pass, team: team.toUpperCase(), displayName: displayName, scoreTotal: 0, quizzesTaken: 0, attempts: {}, createdAt: Date.now() };
       await saveUsers(usersCache);
       currentUser = username;
       await rememberLastUsername(username);
@@ -783,13 +831,14 @@ async function openHome(){
   await loadQuestions();
   const u = usersCache[currentUser];
   if(!u){ logout(); return; }
+  const displayName = u.displayName || currentUser;
 
-  document.getElementById('homeUserName').textContent = currentUser;
+  document.getElementById('homeUserName').textContent = displayName;
   document.getElementById('statScore').textContent = u.scoreTotal;
   document.getElementById('manageQuestionsBtn').classList.toggle('hidden', currentUser.toLowerCase() !== ADMIN_USERNAME);
 
   const avatarEl = document.getElementById('homeAvatar');
-  avatarEl.textContent = initialsFor(currentUser);
+  avatarEl.textContent = initialsFor(displayName);
   avatarEl.style.background = colorFor(currentUser);
 
   const isAdmin = currentUser.toLowerCase() === ADMIN_USERNAME;
@@ -816,7 +865,7 @@ async function openHome(){
   } else {
     const medals = ['🥇','🥈','🥉'];
     rpContent.innerHTML = sorted.slice(0,3).map(([name,data],i)=>
-      medals[i] + ' <b>' + escapeHtml(name) + '</b> · ' + escapeHtml(data.team||'') + ' — ' + (data.scoreTotal||0) + ' pts'
+      medals[i] + ' <b>' + escapeHtml(data.displayName||name) + '</b> · ' + escapeHtml(data.team||'') + ' — ' + (data.scoreTotal||0) + ' pts'
     ).join('<br>');
   }
 
@@ -1025,7 +1074,7 @@ function renderRanking(){
   const wrap = document.getElementById('rankingContent');
   let entries;
   if(rankMode === 'individual'){
-    entries = rankableUsers().map(([name,u])=>({ name, team:u.team, score:u.scoreTotal||0 }))
+    entries = rankableUsers().map(([name,u])=>({ name, displayName:(u.displayName||name), team:u.team, score:u.scoreTotal||0 }))
       .sort((a,b)=>b.score-a.score);
   } else {
     const teams = {};
@@ -1053,7 +1102,7 @@ function renderRanking(){
     const teamLine = (rankMode==='individual' && e.team) ? '<div class="pod-team">' + escapeHtml(e.team) + '</div>' : '';
     podiumHtml += '<div class="pod-col ' + cls + '">' +
       '<div class="pod-tab"><div class="pod-rank">' + (idx+1) + '</div>' +
-      '<div class="pod-name">' + escapeHtml(e.name) + '</div>' +
+      '<div class="pod-name">' + escapeHtml(e.displayName || e.name) + '</div>' +
       teamLine +
       '<div class="pod-score">' + e.score + ' pts</div></div>' +
       '<div class="pod-base"></div></div>';
@@ -1075,7 +1124,7 @@ function renderRanking(){
       const isMe = rankMode==='individual' && e.name === currentUser;
       listHtml += '<div class="rank-row' + (isMe ? ' me' : '') + '">' +
         '<div class="rank-pos">#' + (i+4) + '</div>' +
-        '<div class="rank-info"><div class="rank-name">' + escapeHtml(e.name) + '</div>' +
+        '<div class="rank-info"><div class="rank-name">' + escapeHtml(e.displayName || e.name) + '</div>' +
         (rankMode==='individual' ? '<div class="rank-team">' + escapeHtml(e.team||'') + '</div>' : '') +
         '</div><div class="rank-score">' + e.score + '</div></div>';
     });
@@ -1132,7 +1181,8 @@ function renderUsersBank(){
     row.className = 'user-row';
     const isSelf = name.toLowerCase() === currentUser.toLowerCase();
     const safeName = escapeHtml(name);
-    row.innerHTML = '<div class="u-info"><div class="u-name">' + safeName + '</div>' +
+    const safeDisplay = escapeHtml(u.displayName || name);
+    row.innerHTML = '<div class="u-info"><div class="u-name">' + safeDisplay + ' <span class="u-username">@' + safeName + '</span></div>' +
       '<div class="u-meta">' + escapeHtml(u.team||'') + ' · ' + (u.scoreTotal||0) + ' pts</div></div>' +
       (isSelf ? '<span class="u-meta">você</span>' : '<button class="remove-btn" id="rmbtn-' + safeName + '" onclick="askRemoveUser(this, \'' + name.replace(/'/g,"\\'") + '\')">Remover</button>');
     wrap.appendChild(row);
@@ -1263,10 +1313,6 @@ async function saveNewQuestion(){
    INIT
    ============================================================ */
 async function init(){
-  try{
-    const last = await getLastUsername();
-    if(last){ document.getElementById('authUser').value = last; }
-  }catch(e){}
   showScreen('screen-auth');
 }
 init();
