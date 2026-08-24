@@ -131,7 +131,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .btn-stamp:active{ background:#a53a31; }
 .btn-outline{ background:transparent; color:var(--ink); border:1.5px solid var(--line); }
 .btn-outline:active{ background:rgba(0,0,0,0.04); }
-.btn-ghost{ background:transparent; color:var(--silver); font-weight:600; font-size:13.5px; padding:8px; }
+.btn-ghost{ background:transparent; color:var(--ink-soft); font-weight:700; font-size:13.5px; padding:10px; border:1.5px dashed var(--line); border-radius:10px; }
 .btn:disabled{ opacity:0.45; cursor:not-allowed; }
 .mt10{margin-top:10px;} .mt16{margin-top:16px;} .mt20{margin-top:20px;}
 
@@ -1068,6 +1068,29 @@ function renderRanking(){
       wrap.innerHTML += '<div class="my-pos-note">Você está na posição <b>#' + myPos + '</b> — chegue ao top 3 pra aparecer aqui!</div>';
     }
   }
+
+  if(rest.length > 0){
+    let listHtml = '<div id="fullRankList" class="hidden">';
+    rest.forEach((e,i)=>{
+      const isMe = rankMode==='individual' && e.name === currentUser;
+      listHtml += '<div class="rank-row' + (isMe ? ' me' : '') + '">' +
+        '<div class="rank-pos">#' + (i+4) + '</div>' +
+        '<div class="rank-info"><div class="rank-name">' + escapeHtml(e.name) + '</div>' +
+        (rankMode==='individual' ? '<div class="rank-team">' + escapeHtml(e.team||'') + '</div>' : '') +
+        '</div><div class="rank-score">' + e.score + '</div></div>';
+    });
+    listHtml += '</div>';
+    listHtml += '<button class="btn btn-ghost" id="toggleFullListBtn" style="width:100%;" onclick="toggleFullRankList()">Ver lista completa (' + entries.length + ')</button>';
+    wrap.innerHTML += listHtml;
+  }
+}
+
+function toggleFullRankList(){
+  const list = document.getElementById('fullRankList');
+  const btn = document.getElementById('toggleFullListBtn');
+  const showing = !list.classList.contains('hidden');
+  list.classList.toggle('hidden', showing);
+  btn.textContent = showing ? btn.textContent.replace('Esconder lista', 'Ver lista completa') : btn.textContent.replace('Ver lista completa', 'Esconder lista');
 }
 
 /* ============================================================
