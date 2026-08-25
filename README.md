@@ -14,16 +14,18 @@ Cada pessoa cria um cadastro simples (usuário, senha, equipe), responde rodadas
 
 ## ✨ Funcionalidades
 
-- **Cadastro simples** — usuário, senha e equipe, sem necessidade de e-mail ou conta em qualquer serviço
+- **Cadastro simples** — nome, sobrenome, usuário (sugerido automaticamente a partir do nome, mas editável), senha e equipe, sem necessidade de e-mail ou conta em qualquer serviço
+- **Usuário separado do nome de exibição** — login com um usuário curto, enquanto o ranking mostra o nome completo da pessoa (evita ambiguidade entre colegas com o mesmo primeiro nome)
 - **Quiz cronometrado** — rodadas de 5 perguntas de múltipla escolha, com 20s por pergunta (configurável pelo admin)
 - **Sistema de pontuação** — 10 pontos por acerto + bônus de 10 pontos por gabaritar a rodada
-- **Limite de tentativas** — 3 tentativas por dia por pessoa, representadas visualmente por corações que se esvaziam a cada tentativa usada
-- **Ranking ao vivo** — pódio (🥇🥈🥉) individual e por equipe, com lista completa expansível
+- **Limite de tentativas** — 3 tentativas por dia por pessoa (fuso de Brasília), representadas visualmente por corações que se esvaziam a cada tentativa usada, com contador regressivo mostrando quando renovam
+- **Ranking ao vivo** — pódio (🥇🥈🥉) individual e por equipe, com lista completa expansível e tratamento de empates (mesma pontuação = mesma posição)
 - **Painel administrativo** — restrito a um usuário admin, permite:
   - Gerenciar o banco de perguntas (adicionar/remover) sem precisar reimplantar o site
   - Ajustar o tempo por pergunta em tempo real
   - Remover cadastros e resetar o ranking pra reiniciar testes
 - **Identidade visual sob medida** — cores, logo e tipografia adaptadas ao material oficial de segurança da empresa
+- **Materiais de onboarding** — cartaz e tutorial em PDF (com capturas de tela reais do app) pra divulgar entre a equipe antes mesmo de abrir o link
 
 ## 🛠️ Tecnologias
 
