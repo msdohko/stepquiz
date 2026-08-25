@@ -129,6 +129,8 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .btn-primary{ background:var(--navy); color:var(--paper); }
 .btn-primary:active{ background:var(--navy-soft); }
 .btn-stamp{ background:var(--stamp-red); color:#fff; }
+.countdown-note{ text-align:center; font-family:var(--body); font-size:12.5px; color:var(--ink-soft); margin-top:-2px; }
+.countdown-note b{ font-family:var(--mono); color:var(--ink); letter-spacing:0.5px; }
 .btn-stamp:active{ background:#a53a31; }
 .btn-outline{ background:transparent; color:var(--ink); border:1.5px solid var(--line); }
 .btn-outline:active{ background:rgba(0,0,0,0.04); }
@@ -377,6 +379,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
       <div class="home-actions">
         <button class="btn btn-stamp" id="startQuizBtn" onclick="startQuiz()">Iniciar quiz</button>
+        <div class="countdown-note hidden" id="countdownNote">Novas tentativas em <b id="countdownTimer">--:--:--</b></div>
         <button class="btn btn-outline hidden" id="manageQuestionsBtn" onclick="showQuestionsBank()">Gerenciar perguntas</button>
       </div>
 
@@ -682,7 +685,41 @@ function rankableUsers(){
 }
 
 function todayStr(){
-  return new Date().toISOString().slice(0,10);
+  // horário de Brasília é fixo em UTC-3 (sem horário de verão desde 2019)
+  const brasilia = new Date(Date.now() - 3*3600000);
+  return brasilia.toISOString().slice(0,10);
+}
+
+let countdownIntervalId = null;
+function nextResetDate(){
+  // meia-noite no horário de Brasília = 03:00 UTC do dia seguinte
+  const brasilia = new Date(Date.now() - 3*3600000);
+  const y = brasilia.getUTCFullYear(), m = brasilia.getUTCMonth(), d = brasilia.getUTCDate();
+  return new Date(Date.UTC(y, m, d+1, 3, 0, 0));
+}
+function tickCountdown(){
+  const el = document.getElementById('countdownTimer');
+  if(!el) { stopCountdown(); return; }
+  const diff = nextResetDate().getTime() - Date.now();
+  if(diff <= 0){
+    stopCountdown();
+    openHome();
+    return;
+  }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function startCountdown(){
+  document.getElementById('countdownNote').classList.remove('hidden');
+  tickCountdown();
+  if(countdownIntervalId) clearInterval(countdownIntervalId);
+  countdownIntervalId = setInterval(tickCountdown, 1000);
+}
+function stopCountdown(){
+  document.getElementById('countdownNote').classList.add('hidden');
+  if(countdownIntervalId){ clearInterval(countdownIntervalId); countdownIntervalId = null; }
 }
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -817,6 +854,7 @@ async function submitAuth(){
 }
 
 function logout(){
+  stopCountdown();
   currentUser = null;
   document.getElementById('authPass').value = '';
   setAuthMode('login');
@@ -883,9 +921,11 @@ async function openHome(){
   if(remaining <= 0){
     startBtn.disabled = true;
     startBtn.textContent = 'Sem tentativas hoje — volte amanhã';
+    startCountdown();
   } else {
     startBtn.disabled = false;
     startBtn.textContent = 'Iniciar quiz (' + remaining + ' restante' + (remaining>1?'s':'') + ' hoje)';
+    stopCountdown();
   }
   if(questionsCache.length < 5){
     startBtn.disabled = true;
