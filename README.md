@@ -18,12 +18,15 @@ Cada pessoa cria um cadastro simples (usuário, senha, equipe), responde rodadas
 - **Usuário separado do nome de exibição** — login com um usuário curto, enquanto o ranking mostra o nome completo da pessoa (evita ambiguidade entre colegas com o mesmo primeiro nome)
 - **Quiz cronometrado** — rodadas de 5 perguntas de múltipla escolha, com 20s por pergunta (configurável pelo admin)
 - **Sistema de pontuação** — 10 pontos por acerto + bônus de 10 pontos por gabaritar a rodada
-- **Limite de tentativas** — 3 tentativas por dia por pessoa (fuso de Brasília), representadas visualmente por corações que se esvaziam a cada tentativa usada, com contador regressivo mostrando quando renovam
+- **Sistema de corações (estilo Duolingo)** — 3 tentativas representadas por corações; cada coração usado regenera individualmente 8h depois, em fila (o 1º volta em 8h, o 2º em 16h, o 3º em 24h, contados a partir da primeira perda), com contador regressivo ao vivo mostrando quando o próximo coração chega
+- **Revisão de erros** — ao final de cada rodada, a pessoa vê exatamente quais perguntas errou e qual era a resposta certa, reforçando o aprendizado (não só a pontuação)
 - **Ranking ao vivo** — pódio (🥇🥈🥉) individual e por equipe, com lista completa expansível e tratamento de empates (mesma pontuação = mesma posição)
 - **Painel administrativo** — restrito a um usuário admin, permite:
-  - Gerenciar o banco de perguntas (adicionar/remover) sem precisar reimplantar o site
+  - Gerenciar o banco de perguntas (adicionar/remover) sem precisar reimplantar o site, com lista recolhível/expansível pra não poluir a tela
   - Ajustar o tempo por pergunta em tempo real
+  - Ver um **relatório das perguntas mais erradas pelo time**, com percentual de erro e volume de respostas — ajuda a saber onde reforçar o treinamento antes da auditoria de verdade
   - Remover cadastros e resetar o ranking pra reiniciar testes
+- **Senhas protegidas** — senhas nunca são salvas em texto puro; usam hash SHA-256 com salt único por pessoa (contas antigas são migradas automaticamente no próximo login)
 - **Identidade visual sob medida** — cores, logo e tipografia adaptadas ao material oficial de segurança da empresa
 - **Materiais de onboarding** — cartaz e tutorial em PDF (com capturas de tela reais do app) pra divulgar entre a equipe antes mesmo de abrir o link
 
@@ -54,7 +57,7 @@ cd stepquiz
 python3 -m http.server 8000
 ```
 
-Para conectar a uma instância própria do Firebase, crie um projeto no [Firebase Console](https://console.firebase.google.com), ative o Firestore, e substitua as constantes `FIREBASE_PROJECT_ID` e `FIREBASE_API_KEY` no início do `<script>` em `index.html`. As regras de segurança usadas no projeto (acesso público de leitura/escrita, adequado para um app interno sem dados sensíveis) são:
+Para conectar a uma instância própria do Firebase, crie um projeto no [Firebase Console](https://console.firebase.google.com), ative o Firestore, e substitua as constantes `FIREBASE_PROJECT_ID` e `FIREBASE_API_KEY` no início do `<script>` em `index.html`. As regras de segurança usadas no projeto (acesso público de leitura/escrita, adequado para um app interno de baixo risco) são:
 
 ```
 rules_version = '2';
@@ -67,6 +70,8 @@ service cloud.firestore {
 }
 ```
 
+Como essas regras são abertas, o app nunca guarda senha em texto puro — cada senha é transformada em hash (SHA-256 + salt único por pessoa) antes de ir para o banco, então mesmo alguém acessando a API diretamente não consegue ler as senhas reais.
+
 ## 📱 Design
 
 Mobile-first, pensado para ser usado majoritariamente no celular. Identidade visual construída a partir do material de segurança já usado pela empresa (cartões físicos de treinamento "Kamishibai"), com fundo ilustrado, paleta verde/azul da marca e componentes com forte affordance visual (importante para um público que usa o app rapidamente, entre uma tarefa e outra).
@@ -78,7 +83,7 @@ Algumas ideias mapeadas para uma próxima versão:
 - **Recuperação de senha** — hoje, se a pessoa esquece a senha, só o admin consegue resolver (removendo e recriando o cadastro, com perda do histórico). Um fluxo de recuperação (por e-mail, ou por pergunta de segurança, dado que o público não usa e-mail corporativo no dia a dia) resolveria isso sem depender do admin.
 - **Domínio personalizado** — trocar o link padrão do GitHub Pages por um domínio próprio, mais fácil de divulgar.
 - **Avatar com foto real** — hoje os avatares usam iniciais com cor gerada automaticamente; permitir upload de foto de perfil deixaria a experiência mais pessoal.
-- **Histórico individual de tentativas** — mostrar pra cada pessoa quais perguntas errou ao longo do tempo, pra reforçar o próprio aprendizado.
+- **Histórico de erros por pessoa** — o relatório de erros hoje é agregado (o time todo); mostrar pra cada pessoa individualmente quais perguntas ela mais erra ao longo do tempo tornaria o reforço ainda mais direcionado.
 - **Versão em inglês** — tanto da interface quanto deste README, pensando em portfólio internacional.
 - **Notificações** — avisar quando alguém ultrapassa a posição de outra pessoa no ranking (reforça o engajamento).
 
