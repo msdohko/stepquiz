@@ -292,8 +292,12 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .remove-btn{ font-family:var(--mono); font-size:10.5px; color:var(--stamp-red); background:none; border:none; margin-top:8px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; padding:0; }
 .remove-btn-armed{ background:var(--stamp-red); color:#fff; padding:6px 10px; border-radius:6px; margin-top:0; font-weight:700; }
 .btn-reset-armed{ background:var(--stamp-red) !important; color:#fff !important; border-color:var(--stamp-red) !important; }
-.user-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid var(--line); padding:10px 0; }
+.user-row{ display:flex; flex-direction:column; gap:6px; border-bottom:1px solid var(--line); padding:12px 0; }
 .user-row .u-info{ min-width:0; }
+.user-row .u-actions{ display:flex; gap:14px; align-items:center; }
+.user-row .u-action-btn{ font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); background:none; border:none; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px; padding:0; }
+.user-row .u-action-btn:hover{ color:var(--brand-green); }
+.user-row .u-actions .remove-btn{ margin-top:0; }
 .user-row .u-name{ font-weight:700; font-size:14px; }
 .user-row .u-username{ font-family:var(--mono); font-weight:400; font-size:11px; color:var(--ink-soft); }
 .user-row .u-meta{ font-family:var(--mono); font-size:11px; color:var(--ink-soft); margin-top:2px; }
@@ -401,9 +405,26 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       </div>
 
       <div class="link-row">
-        <span></span>
+        <button class="link-btn" onclick="openChangePassword('voluntary')">Trocar senha</button>
         <button class="link-btn danger" onclick="logout()">Sair da conta</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD -->
+  <div id="screen-changepass" class="hidden">
+    <div class="card">
+      <div class="card-logo"></div>
+      <div class="ledger-tab">Segurança</div>
+      <h1 class="page-title">Criar nova senha</h1>
+      <p class="page-sub" id="changePassIntro">Escolha uma nova senha pra sua conta.</p>
+      <label>Nova senha</label>
+      <input type="password" id="newPass1" placeholder="Mínimo 4 caracteres" minlength="4">
+      <label>Confirmar nova senha</label>
+      <input type="password" id="newPass2" placeholder="Repita a nova senha">
+      <div class="error-msg" id="changePassError"></div>
+      <button class="btn btn-primary mt20" onclick="submitPasswordChange()">Salvar nova senha</button>
+      <button class="btn btn-ghost mt10" id="cancelChangePassBtn" style="width:100%;" onclick="backToHome()">Cancelar</button>
     </div>
   </div>
 
@@ -789,7 +810,7 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
 function showScreen(id){
-  ['screen-auth','screen-home','screen-quiz','screen-result','screen-ranking','screen-questions'].forEach(s=>{
+  ['screen-auth','screen-home','screen-quiz','screen-result','screen-ranking','screen-questions','screen-changepass'].forEach(s=>{
     document.getElementById(s).classList.toggle('hidden', s !== id);
   });
   // (sem barra de topo — logout fica no botão dentro do painel)
@@ -839,6 +860,48 @@ function updateUsernameSuggestion(){
 function findUserKey(username){
   const target = (username || '').trim().toLowerCase();
   return Object.keys(usersCache).find(k => k.toLowerCase() === target);
+}
+
+let changePassMode = 'voluntary';
+
+function openChangePassword(mode){
+  changePassMode = mode || 'voluntary';
+  document.getElementById('newPass1').value = '';
+  document.getElementById('newPass2').value = '';
+  document.getElementById('changePassError').style.display = 'none';
+  document.getElementById('changePassIntro').textContent = changePassMode === 'forced'
+    ? 'Sua senha foi redefinida pelo administrador. Crie uma senha só sua pra continuar.'
+    : 'Escolha uma nova senha pra sua conta.';
+  document.getElementById('cancelChangePassBtn').classList.toggle('hidden', changePassMode === 'forced');
+  showScreen('screen-changepass');
+}
+
+async function submitPasswordChange(){
+  const p1 = document.getElementById('newPass1').value;
+  const p2 = document.getElementById('newPass2').value;
+  const errEl = document.getElementById('changePassError');
+  errEl.style.display = 'none';
+  if(p1.length < 4){
+    errEl.textContent = 'A senha precisa ter no mínimo 4 caracteres.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(p1 !== p2){
+    errEl.textContent = 'As senhas digitadas não coincidem.';
+    errEl.style.display = 'block';
+    return;
+  }
+  await loadUsers();
+  const u = usersCache[currentUser];
+  if(!u){ logout(); return; }
+  const salt = generateSalt();
+  u.passwordHash = await hashPassword(p1, salt);
+  u.salt = salt;
+  delete u.password;
+  delete u.mustChangePassword;
+  await saveUsers(usersCache);
+  showToast('Senha atualizada com sucesso!');
+  await openHome();
 }
 
 function generateSalt(){
@@ -931,7 +994,11 @@ async function submitAuth(){
       }
       currentUser = key;
       await rememberLastUsername(key);
-      await openHome();
+      if(u.mustChangePassword){
+        openChangePassword('forced');
+      } else {
+        await openHome();
+      }
     }
   }catch(e){
     errEl.textContent = 'Algo deu errado ao entrar. Tente novamente.';
@@ -1370,11 +1437,57 @@ function renderUsersBank(){
     const isSelf = name.toLowerCase() === currentUser.toLowerCase();
     const safeName = escapeHtml(name);
     const safeDisplay = escapeHtml(u.displayName || name);
+    const jsName = name.replace(/'/g,"\\'");
     row.innerHTML = '<div class="u-info"><div class="u-name">' + safeDisplay + ' <span class="u-username">@' + safeName + '</span></div>' +
       '<div class="u-meta">' + escapeHtml(u.team||'') + ' · ' + (u.scoreTotal||0) + ' pts</div></div>' +
-      (isSelf ? '<span class="u-meta">você</span>' : '<button class="remove-btn" id="rmbtn-' + safeName + '" onclick="askRemoveUser(this, \'' + name.replace(/'/g,"\\'") + '\')">Remover</button>');
+      '<div class="u-actions">' +
+      '<button class="u-action-btn" onclick="adminResetPassword(\'' + jsName + '\')">Resetar senha</button>' +
+      '<button class="u-action-btn" onclick="adminRenameUsername(\'' + jsName + '\')">Editar usuário</button>' +
+      (isSelf ? '' : '<button class="u-action-btn remove-btn" id="rmbtn-' + safeName + '" onclick="askRemoveUser(this, \'' + jsName + '\')">Remover</button>') +
+      '</div>';
     wrap.appendChild(row);
   });
+}
+
+async function adminResetPassword(username){
+  const label = (usersCache[username] && (usersCache[username].displayName || username)) || username;
+  const newPass = window.prompt('Nova senha para ' + label + ' (mínimo 4 caracteres):');
+  if(newPass === null) return;
+  if(newPass.trim().length < 4){ showToast('Senha muito curta — mínimo 4 caracteres.'); return; }
+  await loadUsers();
+  const u = usersCache[username];
+  if(!u){ showToast('Usuário não encontrado.'); return; }
+  const salt = generateSalt();
+  u.passwordHash = await hashPassword(newPass.trim(), salt);
+  u.salt = salt;
+  delete u.password;
+  u.mustChangePassword = true;
+  await saveUsers(usersCache);
+  showToast('Senha de ' + label + ' foi redefinida. Ela vai criar uma senha própria no próximo login.');
+}
+
+async function adminRenameUsername(oldUsername){
+  await loadUsers();
+  const u = usersCache[oldUsername];
+  if(!u){ showToast('Usuário não encontrado.'); return; }
+  const label = u.displayName || oldUsername;
+  const raw = window.prompt('Novo usuário para ' + label + ':', oldUsername);
+  if(raw === null) return;
+  const newUsername = raw.trim();
+  if(!newUsername){ showToast('Usuário não pode ficar vazio.'); return; }
+  if(newUsername.toLowerCase() !== oldUsername.toLowerCase() && findUserKey(newUsername)){
+    showToast('Já existe alguém cadastrado com esse usuário.');
+    return;
+  }
+  delete usersCache[oldUsername];
+  usersCache[newUsername] = u;
+  await saveUsers(usersCache);
+  if(currentUser && currentUser.toLowerCase() === oldUsername.toLowerCase()){
+    currentUser = newUsername;
+    await rememberLastUsername(newUsername);
+  }
+  showToast('Usuário de ' + label + ' agora é @' + newUsername + '.');
+  renderUsersBank();
 }
 
 function askRemoveUser(btn, name){
