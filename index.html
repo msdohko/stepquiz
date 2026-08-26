@@ -324,7 +324,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       </div>
 
       <label id="authUsernameLabel">Usuário</label>
-      <input type="text" id="authUsername" autocomplete="username" placeholder="Ex: eduardo silva" oninput="this.dataset.touched='1'">
+      <input type="text" id="authUsername" autocomplete="username" placeholder="Ex: eduardosilva" oninput="this.dataset.touched='1'">
       <p class="field-hint hidden" id="usernameHint">Preenchido automático com seu nome — pode editar se preferir.</p>
 
       <label>Senha</label>
@@ -693,22 +693,20 @@ function todayStr(){
 const HEART_REGEN_MS = 8 * 3600000; // cada coração perdido volta em 8h, em fila
 
 function computeHearts(u){
-  let raw = u.heartsState;
-  if(!raw){
-    // migração do sistema antigo (contador por dia)
+  if(!u.heartsState){
+    // migração do sistema antigo (contador por dia) — feita uma única vez e fixada
     const oldUsed = (u.attempts && u.attempts[todayStr()]) || 0;
-    raw = oldUsed > 0
+    u.heartsState = oldUsed > 0
       ? { missing: Math.min(3, oldUsed), nextRegenAt: Date.now() + HEART_REGEN_MS }
       : { missing: 0, nextRegenAt: null };
   }
-  let missing = raw.missing || 0;
-  let nextRegenAt = raw.nextRegenAt || null;
+  const hs = u.heartsState;
   const now = Date.now();
-  while(missing > 0 && nextRegenAt && now >= nextRegenAt){
-    missing--;
-    nextRegenAt = missing > 0 ? nextRegenAt + HEART_REGEN_MS : null;
+  while(hs.missing > 0 && hs.nextRegenAt && now >= hs.nextRegenAt){
+    hs.missing--;
+    hs.nextRegenAt = hs.missing > 0 ? hs.nextRegenAt + HEART_REGEN_MS : null;
   }
-  return { missing, nextRegenAt };
+  return hs;
 }
 
 let countdownIntervalId = null;
@@ -780,19 +778,19 @@ function setAuthMode(mode){
 }
 
 function normalizeForUsername(s){
-  return (s||'').trim().replace(/\s+/g,' ').toLowerCase();
+  return (s||'').trim().replace(/\s+/g,'').toLowerCase();
 }
 function updateUsernameSuggestion(){
   const un = document.getElementById('authUsername');
   if(un.dataset.touched === '1') return;
   const first = document.getElementById('authFirstName').value.trim();
   const last = document.getElementById('authLastName').value.trim();
-  const base = normalizeForUsername(last ? (first + ' ' + last) : first);
+  const base = normalizeForUsername(last ? (first + last) : first);
   if(!base){ un.value = ''; return; }
   if(!findUserKey(base)){ un.value = base; return; }
   let n = 1;
-  while(findUserKey(base + ' ' + String(n).padStart(2,'0'))){ n++; }
-  un.value = base + ' ' + String(n).padStart(2,'0');
+  while(findUserKey(base + String(n).padStart(2,'0'))){ n++; }
+  un.value = base + String(n).padStart(2,'0');
 }
 
 function findUserKey(username){
@@ -929,7 +927,11 @@ async function openHome(){
     }).join('<br>');
   }
 
+  const heartsSnapshotBefore = JSON.stringify(u.heartsState || null);
   const hearts = computeHearts(u);
+  if(JSON.stringify(u.heartsState) !== heartsSnapshotBefore){
+    saveUsers(usersCache).catch(()=>{});
+  }
   const usedNow = hearts.missing;
   for(let i=1;i<=3;i++){
     const lost = i <= usedNow;
