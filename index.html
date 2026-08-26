@@ -162,7 +162,17 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
   display:flex; align-items:center; justify-content:center;
   color:#fff; font-family:var(--body); font-weight:800; font-size:18px; letter-spacing:0.5px;
   border:2px solid rgba(255,255,255,0.6); box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  background-size:cover; background-position:center;
 }
+.avatar-wrap{ display:flex; flex-direction:column; align-items:center; gap:5px; flex-shrink:0; }
+.avatar-links{ display:flex; align-items:center; gap:5px; }
+.avatar-edit-link{
+  font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;
+  color:var(--brand-green); background:none; border:none; cursor:pointer; padding:0; font-weight:700;
+}
+.avatar-links-sep{ font-size:10px; color:var(--line); }
+.reg-avatar-row{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.reg-avatar-row .avatar{ background:var(--silver); font-size:20px; }
 .home-stats-text{ display:flex; flex-direction:column; gap:4px; }
 .hst-row{ font-family:var(--body); font-size:15px; color:var(--ink); }
 .hst-row span{ color:var(--ink-soft); margin-right:4px; }
@@ -337,6 +347,15 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <div class="auth-spacer" id="authSpacer"></div>
 
       <div id="nameFields" class="hidden">
+        <div class="reg-avatar-row">
+          <div class="avatar" id="regAvatarPreview">?</div>
+          <div>
+            <button class="avatar-edit-link" onclick="document.getElementById('regAvatarFileInput').click()">Adicionar foto</button>
+            <p class="field-hint" style="margin-top:2px;">Opcional — pode adicionar depois também.</p>
+          </div>
+          <input type="file" id="regAvatarFileInput" accept="image/*" class="hidden" onchange="handleRegAvatarUpload(event)">
+        </div>
+
         <label>Primeiro nome</label>
         <input type="text" id="authFirstName" autocomplete="given-name" placeholder="Ex: Eduardo" oninput="updateUsernameSuggestion()">
 
@@ -383,7 +402,15 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
           <div class="hst-row"><span>Pontos:</span> <b id="statScore">0</b></div>
           <div class="hst-row"><span>Ranking:</span> <b id="statPos">—</b></div>
         </div>
-        <div class="avatar" id="homeAvatar">—</div>
+        <div class="avatar-wrap">
+          <div class="avatar" id="homeAvatar">—</div>
+          <div class="avatar-links">
+            <button class="avatar-edit-link" onclick="document.getElementById('avatarFileInput').click()">Editar</button>
+            <span class="avatar-links-sep hidden" id="avatarRemoveSep">·</span>
+            <button class="avatar-edit-link hidden" id="removeAvatarLink" onclick="removeAvatarPhoto()">Remover</button>
+          </div>
+          <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)">
+        </div>
       </div>
 
       <label style="margin-top:16px;">Tentativas disponíveis</label>
@@ -553,6 +580,7 @@ document.querySelectorAll('.card-logo').forEach(el => {
 let currentUser = null;      // username logado nesta sessão
 const ADMIN_USERNAME = 'admin'; // único usuário que pode gerenciar perguntas
 let authMode = 'login';      // 'login' | 'register'
+let pendingAvatarPhoto = null;
 let rankMode = 'individual';
 let quizQuestions = [];
 let quizIndex = 0;
@@ -840,6 +868,10 @@ function setAuthMode(mode){
   usernameEl.value = '';
   document.getElementById('authFirstName').value = '';
   document.getElementById('authLastName').value = '';
+  pendingAvatarPhoto = null;
+  const regPreview = document.getElementById('regAvatarPreview');
+  regPreview.style.background = 'var(--silver)';
+  regPreview.textContent = '?';
   const btn = document.getElementById('authSubmitBtn');
   btn.textContent = mode==='login' ? 'ENTRAR' : 'Criar cadastro';
   btn.classList.toggle('btn-auth-submit', mode==='login');
@@ -914,6 +946,86 @@ async function submitPasswordChange(){
   await openHome();
 }
 
+async function handleRegAvatarUpload(e){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    showToast('Selecione um arquivo de imagem.');
+    return;
+  }
+  try{
+    const dataUrl = await new Promise((resolve, reject)=>{
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    pendingAvatarPhoto = await resizeImageToSquare(dataUrl, 160);
+    const preview = document.getElementById('regAvatarPreview');
+    preview.style.background = 'url(' + pendingAvatarPhoto + ') center/cover no-repeat';
+    preview.textContent = '';
+  }catch(err){
+    showToast('Não foi possível processar essa imagem.');
+  }
+}
+
+async function removeAvatarPhoto(){
+  await loadUsers();
+  const u = usersCache[currentUser];
+  if(!u) return;
+  delete u.avatarPhoto;
+  await saveUsers(usersCache);
+  await openHome();
+}
+
+async function handleAvatarUpload(e){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){
+    showToast('Selecione um arquivo de imagem.');
+    return;
+  }
+  try{
+    const dataUrl = await new Promise((resolve, reject)=>{
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    const resized = await resizeImageToSquare(dataUrl, 160);
+    await loadUsers();
+    const u = usersCache[currentUser];
+    if(!u) return;
+    u.avatarPhoto = resized;
+    await saveUsers(usersCache);
+    showToast('Foto atualizada!');
+    await openHome();
+  }catch(err){
+    showToast('Não foi possível processar essa imagem.');
+  }
+}
+
+function resizeImageToSquare(dataUrl, size){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const minSide = Math.min(img.width, img.height);
+      const sx = (img.width - minSide) / 2;
+      const sy = (img.height - minSide) / 2;
+      ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
 function generateSalt(){
   const arr = new Uint8Array(16);
   crypto.getRandomValues(arr);
@@ -971,6 +1083,8 @@ async function submitAuth(){
       const salt = generateSalt();
       const passwordHash = await hashPassword(pass, salt);
       usersCache[username] = { passwordHash: passwordHash, salt: salt, team: team.toUpperCase(), displayName: displayName, scoreTotal: 0, quizzesTaken: 0, attempts: {}, createdAt: Date.now() };
+      if(pendingAvatarPhoto) usersCache[username].avatarPhoto = pendingAvatarPhoto;
+      pendingAvatarPhoto = null;
       await saveUsers(usersCache);
       currentUser = username;
       await rememberLastUsername(username);
@@ -1041,12 +1155,24 @@ async function openHome(){
   document.getElementById('manageQuestionsBtn').classList.toggle('hidden', currentUser.toLowerCase() !== ADMIN_USERNAME);
 
   const avatarEl = document.getElementById('homeAvatar');
-  avatarEl.textContent = initialsFor(displayName);
-  avatarEl.style.background = colorFor(currentUser);
+  if(u.avatarPhoto){
+    avatarEl.style.background = 'url(' + u.avatarPhoto + ') center/cover no-repeat';
+    avatarEl.textContent = '';
+  } else {
+    avatarEl.style.background = colorFor(currentUser);
+    avatarEl.textContent = initialsFor(displayName);
+  }
+  document.getElementById('removeAvatarLink').classList.toggle('hidden', !u.avatarPhoto);
+  document.getElementById('avatarRemoveSep').classList.toggle('hidden', !u.avatarPhoto);
 
   const isAdmin = currentUser.toLowerCase() === ADMIN_USERNAME;
   const sorted = rankableUsers().sort((a,b)=>b[1].scoreTotal - a[1].scoreTotal);
-  const pos = sorted.findIndex(([name])=>name===currentUser) + 1;
+  const posRanks = [];
+  for(let i=0;i<sorted.length;i++){
+    posRanks.push(i>0 && sorted[i][1].scoreTotal === sorted[i-1][1].scoreTotal ? posRanks[i-1] : i+1);
+  }
+  const sortedIdx = sorted.findIndex(([name])=>name===currentUser);
+  const pos = sortedIdx>=0 ? posRanks[sortedIdx] : 0;
   const posEl = document.getElementById('statPos');
   if(isAdmin){
     posEl.innerHTML = '<span class="trophy-outline">🏆</span> admin não entra no ranking';
@@ -1060,6 +1186,20 @@ async function openHome(){
     posEl.innerHTML = '🥉 3º lugar';
   } else {
     posEl.innerHTML = '<span class="trophy-outline">🏆</span> #' + pos;
+  }
+
+  if(!isAdmin && pos > 0){
+    if(typeof u.lastKnownRank === 'number' && u.lastKnownRank !== pos){
+      if(pos > u.lastKnownRank){
+        showToast('Você caiu para a ' + pos + 'ª posição — alguém te ultrapassou!');
+      } else {
+        showToast('Você subiu para a ' + pos + 'ª posição! 🎉');
+      }
+    }
+    if(u.lastKnownRank !== pos){
+      u.lastKnownRank = pos;
+      saveUsers(usersCache).catch(()=>{});
+    }
   }
 
   const rpContent = document.getElementById('rankingPreviewContent');
