@@ -27,6 +27,8 @@ Cada pessoa cria um cadastro simples (usuário, senha, equipe), responde rodadas
   - Ver um **relatório das perguntas mais erradas pelo time**, com percentual de erro e volume de respostas — ajuda a saber onde reforçar o treinamento antes da auditoria de verdade
   - Remover cadastros e resetar o ranking pra reiniciar testes
 - **Senhas protegidas** — senhas nunca são salvas em texto puro; usam hash SHA-256 com salt único por pessoa (contas antigas são migradas automaticamente no próximo login)
+- **Recuperação de senha assistida pelo admin** — a pessoa que esquece a senha não precisa criar uma conta nova (evitando duplicidade e perda de pontos): o admin reseta a senha dela pelo painel, e no próximo login ela é obrigada a criar uma senha só sua antes de continuar. A tela de login também tem um link "Esqueci minha senha" explicando esse caminho. Qualquer pessoa também pode trocar a própria senha por vontade própria a qualquer momento
+- **Admin pode editar o usuário de qualquer pessoa** — útil pra corrigir cadastros duplicados ou ajustar o nome de login sem perder pontuação nem histórico
 - **Identidade visual sob medida** — cores, logo e tipografia adaptadas ao material oficial de segurança da empresa
 - **Materiais de onboarding** — cartaz e tutorial em PDF (com capturas de tela reais do app) pra divulgar entre a equipe antes mesmo de abrir o link
 
@@ -80,7 +82,6 @@ Mobile-first, pensado para ser usado majoritariamente no celular. Identidade vis
 
 Algumas ideias mapeadas para uma próxima versão:
 
-- **Recuperação de senha** — hoje, se a pessoa esquece a senha, só o admin consegue resolver (removendo e recriando o cadastro, com perda do histórico). Um fluxo de recuperação (por e-mail, ou por pergunta de segurança, dado que o público não usa e-mail corporativo no dia a dia) resolveria isso sem depender do admin.
 - **Domínio personalizado** — trocar o link padrão do GitHub Pages por um domínio próprio, mais fácil de divulgar.
 - **Avatar com foto real** — hoje os avatares usam iniciais com cor gerada automaticamente; permitir upload de foto de perfil deixaria a experiência mais pessoal.
 - **Histórico de erros por pessoa** — o relatório de erros hoje é agregado (o time todo); mostrar pra cada pessoa individualmente quais perguntas ela mais erra ao longo do tempo tornaria o reforço ainda mais direcionado.
