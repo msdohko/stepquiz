@@ -269,6 +269,13 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
 /* ---------- Questions admin ---------- */
 .qbank-item{ border-bottom:1px solid var(--line); padding:12px 0; }
+.qbank-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.btn-toggle-list{
+  flex-shrink:0; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px;
+  padding:7px 11px; font-family:var(--body); font-size:12px; font-weight:700; color:var(--brand-green);
+  cursor:pointer; white-space:nowrap;
+}
+.qbank-collapsed{ max-height:260px; overflow-y:auto; }
 .report-item{ border-bottom:1px solid var(--line); padding:11px 0; }
 .report-item .r-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
 .report-item .r-q{ font-size:13px; font-weight:600; flex:1; }
@@ -458,10 +465,22 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
     </div>
 
     <div class="card">
+      <div class="ledger-tab">Relatório</div>
+      <h1 class="page-title">Perguntas mais erradas</h1>
+      <p class="page-sub" id="reportSub">Carregando…</p>
+      <div id="errorReportList"></div>
+    </div>
+
+    <div class="card">
       <div class="ledger-tab">Perguntas</div>
-      <h1 class="page-title">Perguntas do quiz</h1>
-      <p class="page-sub" id="qbankCount">0 perguntas cadastradas</p>
-      <div id="qbankList"></div>
+      <div class="qbank-header">
+        <div>
+          <h1 class="page-title" style="margin-bottom:2px;">Perguntas do quiz</h1>
+          <p class="page-sub" id="qbankCount" style="margin-bottom:0;">0 perguntas cadastradas</p>
+        </div>
+        <button class="btn-toggle-list" id="qbankToggleBtn" onclick="toggleQbankList()">Expandir ▾</button>
+      </div>
+      <div id="qbankList" class="qbank-collapsed"></div>
       <button class="btn btn-outline mt16" onclick="showAddQuestionForm()">+ Adicionar pergunta</button>
     </div>
 
@@ -474,13 +493,6 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <div class="error-msg" id="qbankError"></div>
       <button class="btn btn-primary mt16" onclick="saveNewQuestion()">Salvar pergunta</button>
       <button class="btn btn-ghost mt10" onclick="hideAddQuestionForm()" style="width:100%;">Cancelar</button>
-    </div>
-
-    <div class="card">
-      <div class="ledger-tab">Relatório</div>
-      <h1 class="page-title">Perguntas mais erradas</h1>
-      <p class="page-sub" id="reportSub">Carregando…</p>
-      <div id="errorReportList"></div>
     </div>
 
     <div class="card">
@@ -1419,6 +1431,13 @@ async function resetAllUsers(){
   btn.classList.remove('btn-reset-armed');
   renderUsersBank();
   showToast('Todos os cadastros foram resetados. Só o admin ficou.');
+}
+
+function toggleQbankList(){
+  const list = document.getElementById('qbankList');
+  const btn = document.getElementById('qbankToggleBtn');
+  const collapsed = list.classList.toggle('qbank-collapsed');
+  btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
 }
 
 function renderQuestionsBank(){
