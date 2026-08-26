@@ -363,6 +363,10 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <p class="auth-switch" id="authSwitchText">
         Primeiro acesso? <button class="link-inline" id="authSwitchBtn" onclick="setAuthMode('register')">Cadastre-se aqui</button>
       </p>
+      <p class="auth-switch" id="forgotPassRow">
+        <button class="link-inline" onclick="toggleForgotPassNote()">Esqueci minha senha</button>
+      </p>
+      <p class="small-note hidden" id="forgotPassNote">Fale com o administrador do quiz — ele consegue redefinir sua senha em segundos pelo painel dele, sem você perder pontos nem precisar se cadastrar de novo.</p>
       <p class="small-note">Uso interno da equipe — não use senhas que você utiliza em outros sistemas.</p>
     </div>
   </div>
@@ -819,12 +823,18 @@ function showScreen(id){
 /* ============================================================
    AUTH
    ============================================================ */
+function toggleForgotPassNote(){
+  document.getElementById('forgotPassNote').classList.toggle('hidden');
+}
+
 function setAuthMode(mode){
   authMode = mode;
   document.getElementById('authTab').classList.toggle('hidden', mode!=='register');
   document.getElementById('teamField').classList.toggle('hidden', mode!=='register');
   document.getElementById('nameFields').classList.toggle('hidden', mode!=='register');
   document.getElementById('usernameHint').classList.toggle('hidden', mode!=='register');
+  document.getElementById('forgotPassRow').classList.toggle('hidden', mode!=='login');
+  document.getElementById('forgotPassNote').classList.add('hidden');
   const usernameEl = document.getElementById('authUsername');
   usernameEl.dataset.touched = '0';
   usernameEl.value = '';
