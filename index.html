@@ -269,6 +269,16 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
 /* ---------- Questions admin ---------- */
 .qbank-item{ border-bottom:1px solid var(--line); padding:12px 0; }
+.report-item{ border-bottom:1px solid var(--line); padding:11px 0; }
+.report-item .r-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.report-item .r-q{ font-size:13px; font-weight:600; flex:1; }
+.report-item .r-pct{ font-family:var(--mono); font-size:13px; font-weight:700; flex-shrink:0; }
+.report-item .r-pct.high{ color:var(--stamp-red); }
+.report-item .r-pct.mid{ color:var(--gold); }
+.report-item .r-pct.low{ color:var(--verified); }
+.report-item .r-bar{ height:5px; border-radius:3px; background:var(--paper-dim); margin-top:6px; overflow:hidden; }
+.report-item .r-bar-fill{ height:100%; border-radius:3px; background:var(--stamp-red); }
+.report-item .r-meta{ font-family:var(--mono); font-size:10.5px; color:var(--ink-soft); margin-top:4px; }
 .qbank-item .qtext{ font-weight:700; font-size:14px; margin-bottom:6px; }
 .qbank-item .qopts{ font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); line-height:1.7; }
 .qbank-item .qopts .right{ color:var(--verified); font-weight:600; }
@@ -467,6 +477,13 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
     </div>
 
     <div class="card">
+      <div class="ledger-tab">Relatório</div>
+      <h1 class="page-title">Perguntas mais erradas</h1>
+      <p class="page-sub" id="reportSub">Carregando…</p>
+      <div id="errorReportList"></div>
+    </div>
+
+    <div class="card">
       <div class="ledger-tab">Usuários</div>
       <h1 class="page-title">Usuários cadastrados</h1>
       <p class="page-sub" id="userbankCount">0 pessoas cadastradas</p>
@@ -506,6 +523,7 @@ let quizAnswers = [];        // { question, chosenIndex, correctIndex, correct }
 let usersCache = {};
 let questionsCache = [];
 let settingsCache = { questionTime: 20 };
+let statsCache = {}; // { [textoDaPergunta]: { wrong: N, total: N } }
 
 const DEFAULT_QUESTIONS = [
   { id:'q1', text:"Em nossa Pirâmide de Segurança, o que caracteriza um ACIDENTE FATAL?", options:["Ocorrência que resultou em lesão leve","Ocorrência que resultou em morte","Ocorrência sem nenhuma lesão","Ocorrência que gerou apenas afastamento de 1 dia"], correct:1 },
@@ -642,6 +660,19 @@ async function loadSettings(){
   }
   if(!settingsCache.questionTime) settingsCache.questionTime = 20;
   return settingsCache;
+}
+async function loadStats(){
+  try{
+    const val = await fsGet('stats');
+    statsCache = val ? JSON.parse(val) : (statsCache || {});
+  }catch(e){
+    statsCache = statsCache || {};
+  }
+  return statsCache;
+}
+async function saveStats(obj){
+  statsCache = obj;
+  try{ await fsSet('stats', JSON.stringify(obj)); }catch(e){}
 }
 async function saveSettings(obj){
   settingsCache = obj;
@@ -798,6 +829,18 @@ function findUserKey(username){
   return Object.keys(usersCache).find(k => k.toLowerCase() === target);
 }
 
+function generateSalt(){
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function hashPassword(password, salt){
+  const enc = new TextEncoder();
+  const data = enc.encode(salt + ':' + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
 async function submitAuth(){
   const errEl = document.getElementById('authError');
   errEl.style.display = 'none';
@@ -840,7 +883,9 @@ async function submitAuth(){
         return;
       }
       const displayName = lastName ? (firstName + ' ' + lastName) : firstName;
-      usersCache[username] = { password: pass, team: team.toUpperCase(), displayName: displayName, scoreTotal: 0, quizzesTaken: 0, attempts: {}, createdAt: Date.now() };
+      const salt = generateSalt();
+      const passwordHash = await hashPassword(pass, salt);
+      usersCache[username] = { passwordHash: passwordHash, salt: salt, team: team.toUpperCase(), displayName: displayName, scoreTotal: 0, quizzesTaken: 0, attempts: {}, createdAt: Date.now() };
       await saveUsers(usersCache);
       currentUser = username;
       await rememberLastUsername(username);
@@ -854,7 +899,20 @@ async function submitAuth(){
         errEl.style.display = 'block';
         return;
       }
-      if(u.password !== pass){
+      let passOk = false;
+      if(u.passwordHash && u.salt){
+        passOk = (await hashPassword(pass, u.salt)) === u.passwordHash;
+      } else if(u.password){
+        // conta criada antes da atualização de segurança — valida e migra pro hash agora
+        passOk = (u.password === pass);
+        if(passOk){
+          u.salt = generateSalt();
+          u.passwordHash = await hashPassword(pass, u.salt);
+          delete u.password;
+          await saveUsers(usersCache);
+        }
+      }
+      if(!passOk){
         errEl.textContent = 'Senha incorreta. Tente novamente.';
         errEl.style.display = 'block';
         return;
@@ -1105,6 +1163,14 @@ async function finishQuiz(){
   u.quizzesTaken = (u.quizzesTaken || 0) + 1;
   await saveUsers(usersCache);
 
+  await loadStats();
+  quizAnswers.forEach(a=>{
+    if(!statsCache[a.text]) statsCache[a.text] = { wrong: 0, total: 0 };
+    statsCache[a.text].total += 1;
+    if(!a.isRight) statsCache[a.text].wrong += 1;
+  });
+  await saveStats(statsCache);
+
   const stamp = document.getElementById('bigStamp');
   const passed = correctCount >= 3;
   stamp.classList.toggle('low', !passed);
@@ -1235,11 +1301,39 @@ async function showQuestionsBank(){
   await loadQuestions();
   await loadSettings();
   await loadUsers();
+  await loadStats();
   document.getElementById('addQuestionCard').classList.add('hidden');
   document.getElementById('settingsQuestionTime').value = settingsCache.questionTime;
   renderQuestionsBank();
   renderUsersBank();
+  renderErrorReport();
   showScreen('screen-questions');
+}
+
+function renderErrorReport(){
+  const wrap = document.getElementById('errorReportList');
+  const sub = document.getElementById('reportSub');
+  const entries = Object.entries(statsCache)
+    .filter(([, s]) => s.total > 0)
+    .map(([text, s]) => ({ text, wrong: s.wrong, total: s.total, pct: Math.round((s.wrong / s.total) * 100) }))
+    .filter(e => e.wrong > 0)
+    .sort((a, b) => b.pct - a.pct || b.total - a.total);
+
+  if(entries.length === 0){
+    sub.textContent = 'Ainda sem dados suficientes — aparece aqui assim que o time começar a jogar.';
+    wrap.innerHTML = '';
+    return;
+  }
+  sub.textContent = entries.length + ' pergunta' + (entries.length>1?'s':'') + ' com pelo menos 1 erro registrado';
+  wrap.innerHTML = entries.slice(0, 15).map(e=>{
+    const cls = e.pct >= 60 ? 'high' : (e.pct >= 30 ? 'mid' : 'low');
+    return '<div class="report-item">' +
+      '<div class="r-top"><div class="r-q">' + escapeHtml(e.text) + '</div>' +
+      '<div class="r-pct ' + cls + '">' + e.pct + '%</div></div>' +
+      '<div class="r-bar"><div class="r-bar-fill" style="width:' + e.pct + '%; background:' + (cls==='high' ? 'var(--stamp-red)' : cls==='mid' ? 'var(--gold)' : 'var(--verified)') + ';"></div></div>' +
+      '<div class="r-meta">' + e.wrong + ' erro' + (e.wrong>1?'s':'') + ' em ' + e.total + ' resposta' + (e.total>1?'s':'') + '</div>' +
+      '</div>';
+  }).join('');
 }
 
 async function saveSettingsFromForm(){
