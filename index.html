@@ -186,6 +186,13 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .hearts-row{ display:flex; gap:8px; }
 .heart{ font-size:26px; color:var(--stamp-red); line-height:1; transition:transform .25s ease; }
 .heart.lost{ color:var(--line); transform:scale(0.9); }
+.bonus-banner{
+  margin-top:16px; padding:11px 14px; border-radius:12px; background:#FBF3DD; border:1.5px solid var(--gold);
+  font-family:var(--body); font-size:13px; color:#4A3708; text-align:center; line-height:1.4;
+}
+.bonus-banner b{ color:#4A3708; }
+.bonus-banner.fast-banner{ background:#E7F1FB; border-color:#5B95C9; color:#1E4A6B; }
+.bonus-banner.fast-banner b{ color:#1E4A6B; }
 .ranking-box{
   margin-top:16px; border:1.5px solid var(--brand-green); border-radius:12px; padding:12px 14px;
   cursor:pointer; background:#EAF5EE;
@@ -437,6 +444,8 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
         <div class="ranking-box-arrow">›</div>
       </div>
 
+      <div class="bonus-banner hidden" id="bonusRoundBanner"></div>
+
       <div class="home-actions">
         <button class="btn btn-stamp" id="startQuizBtn" onclick="startQuiz()">Iniciar quiz</button>
         <div class="countdown-note hidden" id="countdownNote"><span id="countdownLabel">Novas tentativas em</span> <b id="countdownTimer">--:--:--</b></div>
@@ -521,7 +530,10 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <h1 class="page-title">Configurações</h1>
       <label>Tempo por pergunta (segundos)</label>
       <input type="number" id="settingsQuestionTime" min="5" max="120" step="5">
-      <button class="btn btn-outline mt10" onclick="saveSettingsFromForm()">Salvar tempo</button>
+      <label style="margin-top:14px;">Perguntas por rodada</label>
+      <input type="number" id="settingsQuestionsPerRound" min="3" max="20" step="1">
+      <p class="field-hint">Se for diferente de 5, volta ao padrão sozinho à meia-noite (Brasília).</p>
+      <button class="btn btn-outline mt10" onclick="saveSettingsFromForm()">Salvar configurações</button>
     </div>
 
     <div class="card">
@@ -600,7 +612,8 @@ let quizIndex = 0;
 let quizAnswers = [];        // { question, chosenIndex, correctIndex, correct }
 let usersCache = {};
 let questionsCache = [];
-let settingsCache = { questionTime: 20 };
+let settingsCache = { questionTime: 20, questionsPerRound: 5 };
+const STANDARD_ROUND_SIZE = 5; // acima disso, o app trata como "rodada especial"
 let statsCache = {}; // { [textoDaPergunta]: { wrong: N, total: N } }
 
 const DEFAULT_QUESTIONS = [
@@ -754,12 +767,23 @@ async function saveQuestions(arr){
 async function loadSettings(){
   try{
     const val = await fsGet('settings');
-    settingsCache = val ? JSON.parse(val) : (settingsCache || { questionTime: 20 });
+    settingsCache = val ? JSON.parse(val) : (settingsCache || { questionTime: 20, questionsPerRound: 5 });
     storageOk = true;
   }catch(e){
-    settingsCache = settingsCache || { questionTime: 20 };
+    settingsCache = settingsCache || { questionTime: 20, questionsPerRound: 5 };
   }
   if(!settingsCache.questionTime) settingsCache.questionTime = 20;
+  if(!settingsCache.questionsPerRound) settingsCache.questionsPerRound = 5;
+
+  // reverte sozinho pro padrão assim que vira o dia no horário de Brasília
+  if(settingsCache.questionsPerRound !== STANDARD_ROUND_SIZE){
+    const today = todayStr();
+    if(settingsCache.questionsPerRoundDate !== today){
+      settingsCache.questionsPerRound = STANDARD_ROUND_SIZE;
+      delete settingsCache.questionsPerRoundDate;
+      try{ await fsSet('settings', JSON.stringify(settingsCache)); }catch(e){}
+    }
+  }
   return settingsCache;
 }
 async function loadStats(){
@@ -1182,6 +1206,7 @@ function logout(){
 async function openHome(){
   await loadUsers();
   await loadQuestions();
+  await loadSettings();
   const u = usersCache[currentUser];
   if(!u){ logout(); return; }
   const displayName = u.displayName || currentUser;
@@ -1264,18 +1289,32 @@ async function openHome(){
   }
   const remaining = 3 - usedNow;
   const startBtn = document.getElementById('startQuizBtn');
+  const perRound = settingsCache.questionsPerRound || STANDARD_ROUND_SIZE;
+  const isBonusRound = perRound > STANDARD_ROUND_SIZE;
+  const isFastRound = perRound < STANDARD_ROUND_SIZE;
+
+  const bonusBanner = document.getElementById('bonusRoundBanner');
+  bonusBanner.classList.toggle('hidden', !(isBonusRound || isFastRound));
+  bonusBanner.classList.toggle('fast-banner', isFastRound);
+  if(isBonusRound){
+    bonusBanner.innerHTML = '🔥 <b>Rodada especial hoje!</b> Hoje são ' + perRound + ' perguntas por rodada, em vez das ' + STANDARD_ROUND_SIZE + ' de sempre.';
+  } else if(isFastRound){
+    bonusBanner.innerHTML = '⚡ <b>Rodada rápida hoje!</b> Hoje são só ' + perRound + ' pergunta' + (perRound>1?'s':'') + ' por rodada — mais ágil que o normal.';
+  }
+
   if(remaining <= 0){
     startBtn.disabled = true;
     startBtn.textContent = 'Sem tentativas — aguarde recarregar';
     startCountdown(hearts.nextRegenAt, 'Próxima tentativa em');
   } else {
     startBtn.disabled = false;
-    startBtn.textContent = 'Iniciar quiz (' + remaining + ' restante' + (remaining>1?'s':'') + ')';
+    const label = isBonusRound ? 'Iniciar rodada especial' : (isFastRound ? 'Iniciar rodada rápida' : 'Iniciar quiz');
+    startBtn.textContent = label + ' (' + remaining + ' restante' + (remaining>1?'s':'') + ')';
     stopCountdown();
   }
-  if(questionsCache.length < 5){
+  if(questionsCache.length < perRound){
     startBtn.disabled = true;
-    startBtn.textContent = 'Cadastre ao menos 5 perguntas';
+    startBtn.textContent = 'Cadastre ao menos ' + perRound + ' perguntas';
   }
 
   showScreen('screen-home');
@@ -1305,11 +1344,12 @@ async function startQuiz(){
     showToast('Sem corações disponíveis no momento. Aguarde a recarga.');
     return;
   }
-  if(questionsCache.length < 5){
-    showToast('É preciso ter ao menos 5 perguntas cadastradas.');
+  const perRound = (settingsCache && settingsCache.questionsPerRound) ? settingsCache.questionsPerRound : 5;
+  if(questionsCache.length < perRound){
+    showToast('É preciso ter ao menos ' + perRound + ' perguntas cadastradas.');
     return;
   }
-  quizQuestions = shuffle(questionsCache).slice(0,5);
+  quizQuestions = shuffle(questionsCache).slice(0, perRound);
   quizIndex = 0;
   quizAnswers = [];
   renderQuestion();
@@ -1433,7 +1473,7 @@ async function finishQuiz(){
   await saveStats(statsCache);
 
   const stamp = document.getElementById('bigStamp');
-  const passed = correctCount >= 3;
+  const passed = correctCount >= Math.ceil(quizQuestions.length * 0.6);
   stamp.classList.toggle('low', !passed);
   document.getElementById('stampScore').textContent = correctCount + '/' + quizQuestions.length;
   document.getElementById('resultDetail').innerHTML = perfect
@@ -1565,6 +1605,7 @@ async function showQuestionsBank(){
   await loadStats();
   document.getElementById('addQuestionCard').classList.add('hidden');
   document.getElementById('settingsQuestionTime').value = settingsCache.questionTime;
+  document.getElementById('settingsQuestionsPerRound').value = settingsCache.questionsPerRound;
   renderQuestionsBank();
   renderUsersBank();
   renderErrorReport();
@@ -1603,8 +1644,24 @@ async function saveSettingsFromForm(){
   if(isNaN(val) || val < 5) val = 5;
   if(val > 120) val = 120;
   input.value = val;
-  await saveSettings({ questionTime: val });
-  showToast('Tempo por pergunta atualizado para ' + val + 's.');
+
+  const qInput = document.getElementById('settingsQuestionsPerRound');
+  let qVal = parseInt(qInput.value, 10);
+  if(isNaN(qVal) || qVal < 3) qVal = 3;
+  if(qVal > 20) qVal = 20;
+  let clampMsg = '';
+  if(qVal > questionsCache.length){
+    clampMsg = ' (ajustado — o banco só tem ' + questionsCache.length + ')';
+    qVal = questionsCache.length;
+  }
+  qInput.value = qVal;
+
+  const toSave = { questionTime: val, questionsPerRound: qVal };
+  if(qVal !== STANDARD_ROUND_SIZE){
+    toSave.questionsPerRoundDate = todayStr();
+  }
+  await saveSettings(toSave);
+  showToast('Configurações salvas: ' + val + 's por pergunta, ' + qVal + ' perguntas por rodada' + clampMsg + '.');
 }
 
 function renderUsersBank(){
