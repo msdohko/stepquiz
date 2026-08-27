@@ -50,6 +50,49 @@ O projeto passou por duas migrações de infraestrutura ao longo do desenvolvime
 
 Essa decisão priorizou a real usabilidade do público-alvo (colaboradores de chão de fábrica, muitos sem hábito de uso de aplicativos web) acima da conveniência de desenvolvimento.
 
+## 🗺️ Roadmap — como o projeto evoluiu
+
+```mermaid
+timeline
+    title Do rascunho ao app em produção
+    Fase 1 — Protótipo : Quiz funcional como artifact do Claude
+                        : Armazenamento nativo da plataforma
+    Fase 2 — Infraestrutura própria : Migração para Firebase Firestore (API REST)
+                        : Deploy no GitHub Pages
+                        : Acesso livre, sem conta, sem login prévio
+    Fase 3 — Gamificação : Corações estilo Duolingo (regeneração em fila 8h/16h/24h)
+                        : Ranking individual e por equipe, com empates
+                        : Bônus por rodada perfeita
+    Fase 4 — Identidade e usuários : Nome completo separado do usuário de login
+                        : Sugestão automática de usuário
+                        : Revisão de erros com resposta correta
+    Fase 5 — Segurança : Senhas com hash SHA-256 + salt
+                        : Recuperação de senha assistida pelo admin
+                        : Troca de senha obrigatória após reset
+    Fase 6 — Personalização e dados : Relatório de perguntas mais erradas
+                        : Foto de perfil opcional
+                        : Aviso de mudança de posição no ranking
+    Próxima fase : Domínio próprio
+                 : Histórico de erros por pessoa
+                 : Versão em inglês
+```
+
+## 🔀 Fluxo de decisões do app
+
+Um mapa de como o app decide o que mostrar em cada situação — do primeiro acesso até a pontuação final. Essas imagens são desenhos de verdade (SVG), então aparecem certinho em qualquer lugar que você abrir o README, não só no GitHub.
+
+**Acesso, cadastro e login:**
+
+![Fluxo de acesso, cadastro e login](fluxo-acesso.svg)
+
+**Quiz e pontuação:**
+
+![Fluxo do quiz e pontuação](fluxo-quiz.svg)
+
+**Painel do administrador:**
+
+![Fluxo do painel administrativo](fluxo-admin.svg)
+
 ## 🚀 Como rodar localmente
 
 Por ser um projeto client-side puro, basta:

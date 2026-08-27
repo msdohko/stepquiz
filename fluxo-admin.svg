@@ -1,0 +1,39 @@
+<svg width="100%" viewBox="0 0 1400 626" xmlns="http://www.w3.org/2000/svg" role="img"><title>Fluxo do painel administrativo do StepQuiz</title><rect x="0" y="0" width="1400" height="626" fill="#FDFBF6"/><defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#8A9089" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs><rect x="370" y="30" width="240" height="46" rx="10" fill="#1B4632" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="490.0" y="53.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#FDFBF6">Login como admin</text>
+<line x1="490" y1="76" x2="490" y2="126" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="360" y="126" width="260" height="46" rx="10" fill="#1F7A4D" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="490.0" y="149.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#FDFBF6">Painel administrativo</text>
+<path d="M 490 172 L 490 192 L 355.0 192 L 355.0 232" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="250.0" y="232" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="355.0" y="254.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Configurações</text>
+<text x="355.0" y="273.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Tempo por pergunta</text>
+<path d="M 490 172 L 490 192 L 585.0 192 L 585.0 232" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="480.0" y="232" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="585.0" y="254.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Relatório</text>
+<text x="585.0" y="273.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Perguntas mais erradas</text>
+<path d="M 490 172 L 490 192 L 815.0 192 L 815.0 232" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="710.0" y="232" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="815.0" y="254.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Banco de perguntas</text>
+<text x="815.0" y="273.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Adicionar ou remover</text>
+<path d="M 490 172 L 490 192 L 1045.0 192 L 1045.0 232" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="940.0" y="232" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="1045.0" y="254.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Usuários cadastrados</text>
+<text x="1045.0" y="273.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Ver todo mundo</text>
+<path d="M 1045.0 288 L 1045.0 308 L 815.0 308 L 815.0 338" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="710.0" y="338" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="815.0" y="360.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Resetar senha</text>
+<text x="815.0" y="379.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Define senha temporária</text>
+<path d="M 1045.0 288 L 1045.0 308 L 1045.0 308 L 1045.0 338" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="940.0" y="338" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="1045.0" y="360.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Editar usuário</text>
+<text x="1045.0" y="379.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Corrige duplicidade</text>
+<path d="M 1045.0 288 L 1045.0 308 L 1275.0 308 L 1275.0 338" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="1170.0" y="338" width="210" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="1275.0" y="360.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Remover cadastro</text>
+<text x="1275.0" y="379.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#5B6660">Apaga a conta</text>
+<path d="M 815.0 394 L 815.0 444" fill="none" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="665.0" y="444" width="300" height="56" rx="10" fill="#FDFBF6" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="815.0" y="472.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#20241F">Pessoa loga com senha temporária</text>
+<line x1="815.0" y1="500" x2="815.0" y2="550" stroke="#8A9089" stroke-width="1.3" marker-end="url(#arrow)"/>
+<rect x="665.0" y="550" width="300" height="46" rx="10" fill="#C9A227" stroke="#DDE3D9" stroke-width="1.3"/>
+<text x="815.0" y="573.0" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#4A3708">Obrigada a criar senha nova</text></svg>
