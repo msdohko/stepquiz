@@ -179,8 +179,9 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .trophy-outline{ opacity:0.35; filter:grayscale(1); font-size:15px; }
 .hearts-block{ display:inline-block; margin-top:16px; }
 .hearts-title{
-  font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;
-  color:var(--ink-soft); text-align:center; line-height:1.3; margin-bottom:6px;
+  font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:0.5px;
+  color:var(--ink-soft); text-align:center; line-height:1.35; margin-bottom:6px;
+  max-width:64px; margin-left:auto; margin-right:auto;
 }
 .hearts-row{ display:flex; gap:8px; }
 .heart{ font-size:26px; color:var(--stamp-red); line-height:1; transition:transform .25s ease; }
@@ -636,7 +637,21 @@ const DEFAULT_QUESTIONS = [
   { id:'q36', text:"Qual o significado da sigla IAO?", options:["Investigação e Análise de Ocorrências","Inspeção Anual Obrigatória","Índice de Acidentes por Operação","Instrução de Área Operacional"], correct:0 },
   { id:'q37', text:"Quando deve-se abrir uma IAO?", options:["Somente em caso de fatalidade","Em caso de Acidente ou Quase Acidente","Apenas quando solicitado pela auditoria externa","Uma vez por mês, independentemente de ocorrências"], correct:1 },
   { id:'q38', text:"Onde estão localizados os pontos de encontro do P40?", options:["No estacionamento externo, fora da planta","Ao lado direito do hall de entrada do P20, entre os prédios P20 e P40","No refeitório central","Não existe ponto de encontro definido"], correct:1 },
-  { id:'q39', text:"Qual telefone devemos ligar em caso de EMERGÊNCIA?", options:["3317-8666","0800-123456","190","192"], correct:0 }
+  { id:'q39', text:"Qual telefone devemos ligar em caso de EMERGÊNCIA?", options:["3317-8666","0800-123456","190","192"], correct:0 },
+  { id:'q40', text:"Quais são as 6 áreas de atuação do Game Changers?", options:["Eficiência Operacional, Manutenção, Recursos Humanos, Qualidade, Volume e Logística","Segurança, Marketing, Manutenção, Consumíveis, Qualidade e Vendas","Segurança, Eficiência Operacional, Consumíveis, Qualidade, Volume e Financeiro","Segurança, Eficiência Operacional, Manutenção, Consumíveis, Qualidade e Volume de Produção"], correct:3 },
+  { id:'q41', text:"O que é uma forma de contribuir com o Game Changer de SEGURANÇA?", options:["Evitar informar quase acidentes pra não gerar relatório","Deixar o checklist de segurança só para o supervisor preencher","Sinalizar condições inseguras ou não rotineiras","Ignorar pequenos desvios pra não atrasar a produção"], correct:2 },
+  { id:'q42', text:"O que é uma forma de contribuir com o Game Changer de QUALIDADE?", options:["Corrigir os erros só quando o cliente reclamar","Deixar de registrar falhas pra não gerar burocracia","Ignorar pequenos desvios do processo","Fazer certo da primeira vez"], correct:3 },
+  { id:'q43', text:"O que é uma forma de contribuir com o Game Changer de EFICIÊNCIA OPERACIONAL?", options:["Deixar o posto de trabalho bagunçado pra economizar tempo","Repetir o mesmo processo mesmo sabendo que tem desperdício","Manter o posto organizado e evitar movimentações desnecessárias","Guardar as ideias de melhoria só pra si"], correct:2 },
+  { id:'q44', text:"O que é uma forma de contribuir com o Game Changer de MANUTENÇÃO?", options:["Esperar o equipamento quebrar totalmente antes de avisar","Ignorar os padrões de operação quando dá pressa","Deixar as atividades de manutenção sem planejamento","Identificar e informar falhas rapidamente"], correct:3 },
+  { id:'q45', text:"O que é uma forma de contribuir com o Game Changer de CONSUMÍVEIS?", options:["Pedir troca de EPI mesmo sem necessidade","Não se importar com o consumo de materiais da equipe","Fazer compras extras sem necessidade real","Cuidar dos EPIs e equipamentos, evitando desperdício"], correct:3 },
+  { id:'q46', text:"O que é uma forma de contribuir com o Game Changer de VOLUME?", options:["Ignorar desvios de processo pra ganhar tempo","Aumentar a produção mesmo sem seguir o TP","Utilizar o TP e direcionar desvios para as áreas de suporte","Deixar de garantir qualidade pra entregar mais rápido"], correct:2 },
+  { id:'q47', text:"Qual é o objetivo estratégico da empresa?", options:["Dobrar o quadro de funcionários até 2030","Aumentar os custos operacionais em favor da segurança","Reduzir custos e aumentar a produtividade até 2030, em 6% ao ano","Reduzir o volume de produção pra focar em qualidade"], correct:2 },
+  { id:'q48', text:"Qual é o objetivo do Game Changer de SEGURANÇA?", options:["Cuidar das pessoas, prevenir acidentes e garantir um ambiente seguro pra todos","Aumentar a velocidade de produção mesmo com riscos","Reduzir o número de checklists preenchidos","Focar só em equipamentos, sem envolver as pessoas"], correct:0 },
+  { id:'q49', text:"Qual é o objetivo do Game Changer de QUALIDADE?", options:["Aumentar o volume de produção sem se preocupar com o padrão","Focar só na entrega rápida, sem revisar o processo","Entregar produtos e serviços com qualidade e consistência, atendendo o cliente","Reduzir a quantidade de testes de qualidade"], correct:2 },
+  { id:'q50', text:"Qual é o objetivo do Game Changer de VOLUME?", options:["Reduzir a produção pra economizar recursos","Aumentar o volume a qualquer custo, sem controle","Focar só na capacidade, ignorando a demanda","Aumentar o volume com eficiência, equilibrando demanda, capacidade e custo"], correct:3 },
+  { id:'q51', text:"Qual é o objetivo do Game Changer de MANUTENÇÃO?", options:["Deixar a manutenção só para quando o equipamento quebrar","Reduzir a manutenção preventiva pra economizar tempo","Trocar todos os equipamentos por novos todo ano","Garantir equipamentos disponíveis e confiáveis, reduzindo paradas e custos desnecessários"], correct:3 },
+  { id:'q52', text:"Qual é o objetivo do Game Changer de EFICIÊNCIA OPERACIONAL?", options:["Reduzir a produtividade pra evitar erros","Aumentar o número de etapas dos processos","Eliminar desperdícios, otimizar processos e aumentar a produtividade","Focar só na velocidade, sem otimizar recursos"], correct:2 },
+  { id:'q53', text:"Qual é o objetivo do Game Changer de CONSUMÍVEIS?", options:["Reduzir a performance pra economizar material","Ignorar o custo dos materiais usados","Aumentar o consumo de materiais pra garantir estoque","Usar melhor os materiais, reduzindo consumo e custos sem perder a performance"], correct:3 }
 ];
 
 /* ============================================================
