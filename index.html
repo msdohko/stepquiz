@@ -526,9 +526,14 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
     <div class="card">
       <div class="ledger-tab">Relatório</div>
-      <h1 class="page-title">Perguntas mais erradas</h1>
-      <p class="page-sub" id="reportSub">Carregando…</p>
-      <div id="errorReportList"></div>
+      <div class="qbank-header">
+        <div>
+          <h1 class="page-title" style="margin-bottom:2px;">Perguntas mais erradas</h1>
+          <p class="page-sub" id="reportSub" style="margin-bottom:0;">Carregando…</p>
+        </div>
+        <button class="btn-toggle-list" id="reportToggleBtn" onclick="toggleErrorReportList()">Expandir ▾</button>
+      </div>
+      <div id="errorReportList" class="qbank-collapsed"></div>
     </div>
 
     <div class="card">
@@ -1572,7 +1577,7 @@ function renderErrorReport(){
     return;
   }
   sub.textContent = entries.length + ' pergunta' + (entries.length>1?'s':'') + ' com pelo menos 1 erro registrado';
-  wrap.innerHTML = entries.slice(0, 15).map(e=>{
+  wrap.innerHTML = entries.map(e=>{
     const cls = e.pct >= 60 ? 'high' : (e.pct >= 30 ? 'mid' : 'low');
     return '<div class="report-item">' +
       '<div class="r-top"><div class="r-q">' + escapeHtml(e.text) + '</div>' +
@@ -1717,6 +1722,13 @@ async function resetAllUsers(){
 function toggleQbankList(){
   const list = document.getElementById('qbankList');
   const btn = document.getElementById('qbankToggleBtn');
+  const collapsed = list.classList.toggle('qbank-collapsed');
+  btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
+}
+
+function toggleErrorReportList(){
+  const list = document.getElementById('errorReportList');
+  const btn = document.getElementById('reportToggleBtn');
   const collapsed = list.classList.toggle('qbank-collapsed');
   btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
 }
