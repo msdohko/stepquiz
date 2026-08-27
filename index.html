@@ -727,8 +727,17 @@ async function loadQuestions(){
     questionsCache = (questionsCache && questionsCache.length) ? questionsCache : [];
   }
   if(!questionsCache || questionsCache.length === 0){
-    questionsCache = DEFAULT_QUESTIONS;
+    questionsCache = DEFAULT_QUESTIONS.slice();
     try{ await fsSet('questions', JSON.stringify(questionsCache)); }catch(e){}
+  } else {
+    // adiciona ao banco já salvo qualquer pergunta padrão nova (por id) que ainda não existe,
+    // sem mexer nas que já estão lá (preserva edições feitas pelo admin)
+    const existingIds = new Set(questionsCache.map(q => q.id));
+    const missing = DEFAULT_QUESTIONS.filter(q => q.id && !existingIds.has(q.id));
+    if(missing.length > 0){
+      questionsCache = questionsCache.concat(missing);
+      try{ await fsSet('questions', JSON.stringify(questionsCache)); }catch(e){}
+    }
   }
   return questionsCache;
 }
