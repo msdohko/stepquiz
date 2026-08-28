@@ -114,6 +114,9 @@ label{
 }
 label:first-of-type{ margin-top:0; }
 .field-hint{ font-family:var(--body); font-size:11.5px; color:var(--ink-soft); margin:5px 0 0; }
+.duration-row{ display:flex; gap:10px; }
+.duration-row > div{ flex:1; }
+.duration-unit{ display:block; font-family:var(--mono); font-size:10px; color:var(--ink-soft); text-align:center; margin-top:3px; text-transform:uppercase; letter-spacing:0.5px; }
 input[type=text], input[type=password], select, textarea{
   width:100%; padding:12px 13px; border-radius:9px; border:1.5px solid var(--line);
   font-family:var(--body); font-size:15px; background:#fff; color:var(--ink);
@@ -445,6 +448,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       </div>
 
       <div class="bonus-banner hidden" id="bonusRoundBanner"></div>
+      <div class="bonus-banner hidden" id="pointsBanner"></div>
 
       <div class="home-actions">
         <button class="btn btn-stamp" id="startQuizBtn" onclick="startQuiz()">Iniciar quiz</button>
@@ -532,11 +536,22 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <input type="number" id="settingsQuestionTime" min="5" max="120" step="5">
       <label style="margin-top:14px;">Perguntas por rodada</label>
       <input type="number" id="settingsQuestionsPerRound" min="3" max="20" step="1">
-      <p class="field-hint">Se for diferente de 5, volta ao padrão sozinho à meia-noite (Brasília).</p>
       <label style="margin-top:14px;">Pontos por acerto</label>
       <input type="number" id="settingsPointsPerCorrect" min="1" max="100" step="1">
       <label style="margin-top:14px;">Bônus por gabaritar a rodada</label>
       <input type="number" id="settingsBonusPoints" min="0" max="200" step="5">
+      <label style="margin-top:14px;">Duração da promoção</label>
+      <div class="duration-row">
+        <div>
+          <input type="number" id="settingsDurationHours" min="0" max="720" step="1">
+          <span class="duration-unit">horas</span>
+        </div>
+        <div>
+          <input type="number" id="settingsDurationMinutes" min="0" max="59" step="5">
+          <span class="duration-unit">minutos</span>
+        </div>
+      </div>
+      <p class="field-hint">Só vale se perguntas/pontos acima forem diferentes do padrão (5 perguntas, 10 pontos, 10 de bônus). Depois desse tempo, tudo volta ao normal sozinho — exemplo: 0h e 30min, ou 72h (3 dias).</p>
       <button class="btn btn-outline mt10" onclick="saveSettingsFromForm()">Salvar configurações</button>
     </div>
 
@@ -618,6 +633,8 @@ let usersCache = {};
 let questionsCache = [];
 let settingsCache = { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 };
 const STANDARD_ROUND_SIZE = 5; // acima disso, o app trata como "rodada especial"
+const STANDARD_POINTS_PER_CORRECT = 10;
+const STANDARD_BONUS_POINTS = 10;
 let statsCache = {}; // { [textoDaPergunta]: { wrong: N, total: N } }
 
 const DEFAULT_QUESTIONS = [
@@ -781,12 +798,25 @@ async function loadSettings(){
   if(settingsCache.pointsPerCorrect === undefined || settingsCache.pointsPerCorrect === null) settingsCache.pointsPerCorrect = 10;
   if(settingsCache.bonusPoints === undefined || settingsCache.bonusPoints === null) settingsCache.bonusPoints = 10;
 
-  // reverte sozinho pro padrão assim que vira o dia no horário de Brasília
-  if(settingsCache.questionsPerRound !== STANDARD_ROUND_SIZE){
-    const today = todayStr();
-    if(settingsCache.questionsPerRoundDate !== today){
+  // reverte sozinho quando o horário de expiração escolhido pelo admin passa
+  const differsFromDefault = settingsCache.questionsPerRound !== STANDARD_ROUND_SIZE
+    || settingsCache.pointsPerCorrect !== STANDARD_POINTS_PER_CORRECT
+    || settingsCache.bonusPoints !== STANDARD_BONUS_POINTS;
+  if(differsFromDefault){
+    let expired = false;
+    if(settingsCache.specialSettingsExpiresAt){
+      expired = Date.now() >= settingsCache.specialSettingsExpiresAt;
+    } else {
+      // dados de uma versão anterior (baseada em virar o dia) — considera expirado
+      expired = true;
+    }
+    if(expired){
       settingsCache.questionsPerRound = STANDARD_ROUND_SIZE;
+      settingsCache.pointsPerCorrect = STANDARD_POINTS_PER_CORRECT;
+      settingsCache.bonusPoints = STANDARD_BONUS_POINTS;
+      delete settingsCache.specialSettingsExpiresAt;
       delete settingsCache.questionsPerRoundDate;
+      delete settingsCache.pointsSettingsDate;
       try{ await fsSet('settings', JSON.stringify(settingsCache)); }catch(e){}
     }
   }
@@ -900,6 +930,30 @@ function stopCountdown(){
   const note = document.getElementById('countdownNote');
   if(note) note.classList.add('hidden');
   if(countdownIntervalId){ clearInterval(countdownIntervalId); countdownIntervalId = null; }
+}
+
+let specialCountdownIntervalId = null;
+function tickSpecialCountdown(){
+  const target = settingsCache.specialSettingsExpiresAt;
+  const elRound = document.getElementById('roundCountdownTimer');
+  const elPoints = document.getElementById('pointsCountdownTimer');
+  if(!target || (!elRound && !elPoints)){ stopPointsCountdown(); return; }
+  const diff = target - Date.now();
+  if(diff <= 0){ stopPointsCountdown(); openHome(); return; }
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  const txt = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  if(elRound) elRound.textContent = txt;
+  if(elPoints) elPoints.textContent = txt;
+}
+function startPointsCountdown(){
+  tickSpecialCountdown();
+  if(specialCountdownIntervalId) clearInterval(specialCountdownIntervalId);
+  specialCountdownIntervalId = setInterval(tickSpecialCountdown, 1000);
+}
+function stopPointsCountdown(){
+  if(specialCountdownIntervalId){ clearInterval(specialCountdownIntervalId); specialCountdownIntervalId = null; }
 }
 function showToast(msg){
   const t = document.getElementById('toast');
@@ -1200,6 +1254,7 @@ async function submitAuth(){
 
 function logout(){
   stopCountdown();
+  stopPointsCountdown();
   currentUser = null;
   document.getElementById('authPass').value = '';
   setAuthMode('login');
@@ -1303,9 +1358,33 @@ async function openHome(){
   bonusBanner.classList.toggle('hidden', !(isBonusRound || isFastRound));
   bonusBanner.classList.toggle('fast-banner', isFastRound);
   if(isBonusRound){
-    bonusBanner.innerHTML = '🔥 <b>Rodada especial hoje!</b> Hoje são ' + perRound + ' perguntas por rodada, em vez das ' + STANDARD_ROUND_SIZE + ' de sempre.';
+    bonusBanner.innerHTML = '🔥 <b>Rodada especial hoje!</b> Hoje são ' + perRound + ' perguntas por rodada, em vez das ' + STANDARD_ROUND_SIZE + ' de sempre. Volta ao normal em <b id="roundCountdownTimer">--:--:--</b>.';
   } else if(isFastRound){
-    bonusBanner.innerHTML = '⚡ <b>Rodada rápida hoje!</b> Hoje são só ' + perRound + ' pergunta' + (perRound>1?'s':'') + ' por rodada — mais ágil que o normal.';
+    bonusBanner.innerHTML = '⚡ <b>Rodada rápida hoje!</b> Hoje são só ' + perRound + ' pergunta' + (perRound>1?'s':'') + ' por rodada — mais ágil que o normal. Volta ao normal em <b id="roundCountdownTimer">--:--:--</b>.';
+  }
+
+  const ppc = settingsCache.pointsPerCorrect || STANDARD_POINTS_PER_CORRECT;
+  const bonusPts = (settingsCache.bonusPoints !== undefined) ? settingsCache.bonusPoints : STANDARD_BONUS_POINTS;
+  const pointsUp = ppc > STANDARD_POINTS_PER_CORRECT || bonusPts > STANDARD_BONUS_POINTS;
+  const pointsDown = ppc < STANDARD_POINTS_PER_CORRECT || bonusPts < STANDARD_BONUS_POINTS;
+  const pointsChanged = pointsUp || pointsDown;
+
+  const pointsBanner = document.getElementById('pointsBanner');
+  pointsBanner.classList.toggle('hidden', !pointsChanged);
+  pointsBanner.classList.toggle('fast-banner', pointsDown && !pointsUp);
+  if(pointsChanged){
+    const parts = [];
+    if(ppc !== STANDARD_POINTS_PER_CORRECT) parts.push('cada acerto vale ' + ppc + ' pontos');
+    if(bonusPts !== STANDARD_BONUS_POINTS) parts.push('o bônus de gabaritar é de ' + bonusPts + ' pontos');
+    const title = (pointsUp && !pointsDown) ? 'Pontuação turbinada hoje!' : 'Pontuação ajustada hoje!';
+    const icon = (pointsUp && !pointsDown) ? '💰' : 'ℹ️';
+    pointsBanner.innerHTML = icon + ' <b>' + title + '</b> Hoje ' + parts.join(' e ') + '. Volta ao normal em <b id="pointsCountdownTimer">--:--:--</b>.';
+  }
+
+  if(isBonusRound || isFastRound || pointsChanged){
+    startPointsCountdown();
+  } else {
+    stopPointsCountdown();
   }
 
   if(remaining <= 0){
@@ -1615,6 +1694,9 @@ async function showQuestionsBank(){
   document.getElementById('settingsQuestionsPerRound').value = settingsCache.questionsPerRound;
   document.getElementById('settingsPointsPerCorrect').value = settingsCache.pointsPerCorrect;
   document.getElementById('settingsBonusPoints').value = settingsCache.bonusPoints;
+  const remainingMs = settingsCache.specialSettingsExpiresAt ? Math.max(60000, settingsCache.specialSettingsExpiresAt - Date.now()) : 24 * 3600000;
+  document.getElementById('settingsDurationHours').value = Math.floor(remainingMs / 3600000);
+  document.getElementById('settingsDurationMinutes').value = Math.round((remainingMs % 3600000) / 60000);
   renderQuestionsBank();
   renderUsersBank();
   renderErrorReport();
@@ -1677,12 +1759,33 @@ async function saveSettingsFromForm(){
   if(bonusVal > 200) bonusVal = 200;
   bonusInput.value = bonusVal;
 
+  const durInput = document.getElementById('settingsDurationHours');
+  let durVal = parseInt(durInput.value, 10);
+  if(isNaN(durVal) || durVal < 0) durVal = 0;
+  if(durVal > 720) durVal = 720;
+  durInput.value = durVal;
+
+  const durMinInput = document.getElementById('settingsDurationMinutes');
+  let durMinVal = parseInt(durMinInput.value, 10);
+  if(isNaN(durMinVal) || durMinVal < 0) durMinVal = 0;
+  if(durMinVal > 59) durMinVal = 59;
+  durMinInput.value = durMinVal;
+
+  let durationMs = durVal * 3600000 + durMinVal * 60000;
+  if(durationMs < 60000){
+    durationMs = 60000; // mínimo de 1 minuto
+    durInput.value = 0;
+    durMinInput.value = 1;
+  }
+
   const toSave = { questionTime: val, questionsPerRound: qVal, pointsPerCorrect: ppcVal, bonusPoints: bonusVal };
-  if(qVal !== STANDARD_ROUND_SIZE){
-    toSave.questionsPerRoundDate = todayStr();
+  const isSpecial = (qVal !== STANDARD_ROUND_SIZE) || (ppcVal !== STANDARD_POINTS_PER_CORRECT) || (bonusVal !== STANDARD_BONUS_POINTS);
+  if(isSpecial){
+    toSave.specialSettingsExpiresAt = Date.now() + durationMs;
   }
   await saveSettings(toSave);
-  showToast('Configurações salvas: ' + val + 's por pergunta, ' + qVal + ' perguntas por rodada' + clampMsg + '.');
+  const durMsg = isSpecial ? (' Válido por ' + (durVal>0?durVal+'h':'') + (durMinVal>0?(durVal>0?' ':'')+durMinVal+'min':'') + '.') : '';
+  showToast('Configurações salvas: ' + val + 's por pergunta, ' + qVal + ' perguntas por rodada' + clampMsg + '.' + durMsg);
 }
 
 function renderUsersBank(){
