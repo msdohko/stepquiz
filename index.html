@@ -531,8 +531,12 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
     <div class="card">
       <div class="card-logo"></div>
       <div class="ledger-tab">Admin</div>
-      <h1 class="page-title">Configurações</h1>
-      <label>Tempo por pergunta (segundos)</label>
+      <div class="qbank-header">
+        <h1 class="page-title" style="margin-bottom:0;">Configurações</h1>
+        <button class="btn-toggle-list" id="settingsToggleBtn" onclick="toggleSettingsFields()">Expandir ▾</button>
+      </div>
+      <div id="settingsFieldsWrap" class="hidden">
+      <label style="margin-top:14px;">Tempo por pergunta (segundos)</label>
       <input type="number" id="settingsQuestionTime" min="5" max="120" step="5">
       <label style="margin-top:14px;">Perguntas por rodada</label>
       <input type="number" id="settingsQuestionsPerRound" min="3" max="20" step="1">
@@ -553,6 +557,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       </div>
       <p class="field-hint">Só vale se perguntas/pontos acima forem diferentes do padrão (5 perguntas, 10 pontos, 10 de bônus). Depois desse tempo, tudo volta ao normal sozinho — exemplo: 0h e 30min, ou 72h (3 dias).</p>
       <button class="btn btn-outline mt10" onclick="saveSettingsFromForm()">Salvar configurações</button>
+      </div>
     </div>
 
     <div class="card">
@@ -593,9 +598,14 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
     <div class="card">
       <div class="ledger-tab">Usuários</div>
-      <h1 class="page-title">Usuários cadastrados</h1>
-      <p class="page-sub" id="userbankCount">0 pessoas cadastradas</p>
-      <div id="userbankList"></div>
+      <div class="qbank-header">
+        <div>
+          <h1 class="page-title" style="margin-bottom:2px;">Usuários cadastrados</h1>
+          <p class="page-sub" id="userbankCount" style="margin-bottom:0;">0 pessoas cadastradas</p>
+        </div>
+        <button class="btn-toggle-list" id="userbankToggleBtn" onclick="toggleUserbankList()">Expandir ▾</button>
+      </div>
+      <div id="userbankList" class="qbank-collapsed"></div>
       <button class="btn btn-outline mt16" id="resetUsersBtn" onclick="askResetUsers(this)">Resetar todos os cadastros (exceto admin)</button>
     </div>
 
@@ -1919,6 +1929,20 @@ function toggleQbankList(){
 function toggleErrorReportList(){
   const list = document.getElementById('errorReportList');
   const btn = document.getElementById('reportToggleBtn');
+  const collapsed = list.classList.toggle('qbank-collapsed');
+  btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
+}
+
+function toggleSettingsFields(){
+  const wrap = document.getElementById('settingsFieldsWrap');
+  const btn = document.getElementById('settingsToggleBtn');
+  const hidden = wrap.classList.toggle('hidden');
+  btn.textContent = hidden ? 'Expandir ▾' : 'Recolher ▴';
+}
+
+function toggleUserbankList(){
+  const list = document.getElementById('userbankList');
+  const btn = document.getElementById('userbankToggleBtn');
   const collapsed = list.classList.toggle('qbank-collapsed');
   btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
 }
