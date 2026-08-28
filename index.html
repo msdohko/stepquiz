@@ -189,6 +189,8 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .hearts-row{ display:flex; gap:8px; }
 .heart{ font-size:26px; color:var(--stamp-red); line-height:1; transition:transform .25s ease; }
 .heart.lost{ color:var(--line); transform:scale(0.9); }
+.heart.bonus{ color:var(--gold); }
+.heart.bonus.lost{ color:var(--line); }
 .bonus-banner{
   margin-top:16px; padding:11px 14px; border-radius:12px; background:#FBF3DD; border:1.5px solid var(--gold);
   font-family:var(--body); font-size:13px; color:#4A3708; text-align:center; line-height:1.4;
@@ -1371,8 +1373,9 @@ async function openHome(){
   heartsRowEl.innerHTML = '';
   for(let i=1;i<=maxHearts;i++){
     const lost = i <= usedNow;
+    const isBonusHeart = i > STANDARD_MAX_HEARTS;
     const span = document.createElement('span');
-    span.className = 'heart' + (lost ? ' lost' : '');
+    span.className = 'heart' + (lost ? ' lost' : '') + (isBonusHeart ? ' bonus' : '');
     span.id = 'ah'+i;
     span.textContent = lost ? '♡' : '♥';
     heartsRowEl.appendChild(span);
