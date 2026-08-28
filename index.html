@@ -431,11 +431,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
       <div class="hearts-block">
         <div class="hearts-title">Tentativas restantes</div>
-        <div class="hearts-row" id="heartsRow">
-          <span class="heart" id="ah1">♥</span>
-          <span class="heart" id="ah2">♥</span>
-          <span class="heart" id="ah3">♥</span>
-        </div>
+        <div class="hearts-row" id="heartsRow"></div>
       </div>
 
       <div class="ranking-box" id="rankingPreviewBox" onclick="showRanking()">
@@ -449,6 +445,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 
       <div class="bonus-banner hidden" id="bonusRoundBanner"></div>
       <div class="bonus-banner hidden" id="pointsBanner"></div>
+      <div class="bonus-banner hidden" id="heartsBanner"></div>
 
       <div class="home-actions">
         <button class="btn btn-stamp" id="startQuizBtn" onclick="startQuiz()">Iniciar quiz</button>
@@ -544,6 +541,10 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <input type="number" id="settingsPointsPerCorrect" min="1" max="100" step="1">
       <label style="margin-top:14px;">Bônus por gabaritar a rodada</label>
       <input type="number" id="settingsBonusPoints" min="0" max="200" step="5">
+      <label style="margin-top:14px;">Corações máximos</label>
+      <input type="number" id="settingsMaxHearts" min="1" max="10" step="1">
+      <label style="margin-top:14px;">Horas para cada coração recarregar</label>
+      <input type="number" id="settingsHeartRegenHours" min="1" max="48" step="1">
       <label style="margin-top:14px;">Duração da promoção</label>
       <div class="duration-row">
         <div>
@@ -555,7 +556,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
           <span class="duration-unit">minutos</span>
         </div>
       </div>
-      <p class="field-hint">Só vale se perguntas/pontos acima forem diferentes do padrão (5 perguntas, 10 pontos, 10 de bônus). Depois desse tempo, tudo volta ao normal sozinho — exemplo: 0h e 30min, ou 72h (3 dias).</p>
+      <p class="field-hint">Só vale se algo acima for diferente do padrão (5 perguntas, 10 pontos, 10 de bônus, 3 corações, 8h de recarga). Depois desse tempo, tudo volta ao normal sozinho — exemplo: 0h e 30min, ou 72h (3 dias).</p>
       <button class="btn btn-outline mt10" onclick="saveSettingsFromForm()">Salvar configurações</button>
       </div>
     </div>
@@ -641,10 +642,16 @@ let quizIndex = 0;
 let quizAnswers = [];        // { question, chosenIndex, correctIndex, correct }
 let usersCache = {};
 let questionsCache = [];
-let settingsCache = { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 };
+let settingsCache = { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10, maxHearts: 3, heartRegenHours: 8 };
 const STANDARD_ROUND_SIZE = 5; // acima disso, o app trata como "rodada especial"
 const STANDARD_POINTS_PER_CORRECT = 10;
 const STANDARD_BONUS_POINTS = 10;
+const STANDARD_MAX_HEARTS = 3;
+const STANDARD_HEART_REGEN_HOURS = 8;
+function heartRegenMs(){
+  const hours = (settingsCache && settingsCache.heartRegenHours) || STANDARD_HEART_REGEN_HOURS;
+  return hours * 3600000;
+}
 let statsCache = {}; // { [textoDaPergunta]: { wrong: N, total: N } }
 
 const DEFAULT_QUESTIONS = [
@@ -798,20 +805,24 @@ async function saveQuestions(arr){
 async function loadSettings(){
   try{
     const val = await fsGet('settings');
-    settingsCache = val ? JSON.parse(val) : (settingsCache || { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 });
+    settingsCache = val ? JSON.parse(val) : (settingsCache || { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10, maxHearts: 3, heartRegenHours: 8 });
     storageOk = true;
   }catch(e){
-    settingsCache = settingsCache || { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 };
+    settingsCache = settingsCache || { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10, maxHearts: 3, heartRegenHours: 8 };
   }
   if(!settingsCache.questionTime) settingsCache.questionTime = 20;
   if(!settingsCache.questionsPerRound) settingsCache.questionsPerRound = 5;
   if(settingsCache.pointsPerCorrect === undefined || settingsCache.pointsPerCorrect === null) settingsCache.pointsPerCorrect = 10;
   if(settingsCache.bonusPoints === undefined || settingsCache.bonusPoints === null) settingsCache.bonusPoints = 10;
+  if(!settingsCache.maxHearts) settingsCache.maxHearts = STANDARD_MAX_HEARTS;
+  if(!settingsCache.heartRegenHours) settingsCache.heartRegenHours = STANDARD_HEART_REGEN_HOURS;
 
   // reverte sozinho quando o horário de expiração escolhido pelo admin passa
   const differsFromDefault = settingsCache.questionsPerRound !== STANDARD_ROUND_SIZE
     || settingsCache.pointsPerCorrect !== STANDARD_POINTS_PER_CORRECT
-    || settingsCache.bonusPoints !== STANDARD_BONUS_POINTS;
+    || settingsCache.bonusPoints !== STANDARD_BONUS_POINTS
+    || settingsCache.maxHearts !== STANDARD_MAX_HEARTS
+    || settingsCache.heartRegenHours !== STANDARD_HEART_REGEN_HOURS;
   if(differsFromDefault){
     let expired = false;
     if(settingsCache.specialSettingsExpiresAt){
@@ -824,6 +835,8 @@ async function loadSettings(){
       settingsCache.questionsPerRound = STANDARD_ROUND_SIZE;
       settingsCache.pointsPerCorrect = STANDARD_POINTS_PER_CORRECT;
       settingsCache.bonusPoints = STANDARD_BONUS_POINTS;
+      settingsCache.maxHearts = STANDARD_MAX_HEARTS;
+      settingsCache.heartRegenHours = STANDARD_HEART_REGEN_HOURS;
       delete settingsCache.specialSettingsExpiresAt;
       delete settingsCache.questionsPerRoundDate;
       delete settingsCache.pointsSettingsDate;
@@ -892,21 +905,20 @@ function todayStr(){
   return brasilia.toISOString().slice(0,10);
 }
 
-const HEART_REGEN_MS = 8 * 3600000; // cada coração perdido volta em 8h, em fila
-
 function computeHearts(u){
   if(!u.heartsState){
     // migração do sistema antigo (contador por dia) — feita uma única vez e fixada
+    const maxHearts = (settingsCache && settingsCache.maxHearts) || STANDARD_MAX_HEARTS;
     const oldUsed = (u.attempts && u.attempts[todayStr()]) || 0;
     u.heartsState = oldUsed > 0
-      ? { missing: Math.min(3, oldUsed), nextRegenAt: Date.now() + HEART_REGEN_MS }
+      ? { missing: Math.min(maxHearts, oldUsed), nextRegenAt: Date.now() + heartRegenMs() }
       : { missing: 0, nextRegenAt: null };
   }
   const hs = u.heartsState;
   const now = Date.now();
   while(hs.missing > 0 && hs.nextRegenAt && now >= hs.nextRegenAt){
     hs.missing--;
-    hs.nextRegenAt = hs.missing > 0 ? hs.nextRegenAt + HEART_REGEN_MS : null;
+    hs.nextRegenAt = hs.missing > 0 ? hs.nextRegenAt + heartRegenMs() : null;
   }
   return hs;
 }
@@ -947,7 +959,8 @@ function tickSpecialCountdown(){
   const target = settingsCache.specialSettingsExpiresAt;
   const elRound = document.getElementById('roundCountdownTimer');
   const elPoints = document.getElementById('pointsCountdownTimer');
-  if(!target || (!elRound && !elPoints)){ stopPointsCountdown(); return; }
+  const elHearts = document.getElementById('heartsCountdownTimer');
+  if(!target || (!elRound && !elPoints && !elHearts)){ stopPointsCountdown(); return; }
   const diff = target - Date.now();
   if(diff <= 0){ stopPointsCountdown(); openHome(); return; }
   const h = Math.floor(diff / 3600000);
@@ -956,6 +969,7 @@ function tickSpecialCountdown(){
   const txt = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
   if(elRound) elRound.textContent = txt;
   if(elPoints) elPoints.textContent = txt;
+  if(elHearts) elHearts.textContent = txt;
 }
 function startPointsCountdown(){
   tickSpecialCountdown();
@@ -1352,13 +1366,18 @@ async function openHome(){
     saveUsers(usersCache).catch(()=>{});
   }
   const usedNow = hearts.missing;
-  for(let i=1;i<=3;i++){
+  const maxHearts = (settingsCache && settingsCache.maxHearts) || STANDARD_MAX_HEARTS;
+  const heartsRowEl = document.getElementById('heartsRow');
+  heartsRowEl.innerHTML = '';
+  for(let i=1;i<=maxHearts;i++){
     const lost = i <= usedNow;
-    const heartEl = document.getElementById('ah'+i);
-    heartEl.classList.toggle('lost', lost);
-    heartEl.textContent = lost ? '♡' : '♥';
+    const span = document.createElement('span');
+    span.className = 'heart' + (lost ? ' lost' : '');
+    span.id = 'ah'+i;
+    span.textContent = lost ? '♡' : '♥';
+    heartsRowEl.appendChild(span);
   }
-  const remaining = 3 - usedNow;
+  const remaining = maxHearts - usedNow;
   const startBtn = document.getElementById('startQuizBtn');
   const perRound = settingsCache.questionsPerRound || STANDARD_ROUND_SIZE;
   const isBonusRound = perRound > STANDARD_ROUND_SIZE;
@@ -1391,7 +1410,24 @@ async function openHome(){
     pointsBanner.innerHTML = icon + ' <b>' + title + '</b> Hoje ' + parts.join(' e ') + '. Volta ao normal em <b id="pointsCountdownTimer">--:--:--</b>.';
   }
 
-  if(isBonusRound || isFastRound || pointsChanged){
+  const regenH = (settingsCache && settingsCache.heartRegenHours) || STANDARD_HEART_REGEN_HOURS;
+  const heartsUp = maxHearts > STANDARD_MAX_HEARTS || regenH < STANDARD_HEART_REGEN_HOURS;
+  const heartsDown = maxHearts < STANDARD_MAX_HEARTS || regenH > STANDARD_HEART_REGEN_HOURS;
+  const heartsChanged = heartsUp || heartsDown;
+
+  const heartsBanner = document.getElementById('heartsBanner');
+  heartsBanner.classList.toggle('hidden', !heartsChanged);
+  heartsBanner.classList.toggle('fast-banner', heartsDown && !heartsUp);
+  if(heartsChanged){
+    const hParts = [];
+    if(maxHearts !== STANDARD_MAX_HEARTS) hParts.push('você tem ' + maxHearts + ' corações (em vez de ' + STANDARD_MAX_HEARTS + ')');
+    if(regenH !== STANDARD_HEART_REGEN_HOURS) hParts.push('cada coração recarrega em ' + regenH + 'h (em vez de ' + STANDARD_HEART_REGEN_HOURS + 'h)');
+    const hTitle = (heartsUp && !heartsDown) ? 'Corações turbinados hoje!' : 'Corações ajustados hoje!';
+    const hIcon = (heartsUp && !heartsDown) ? '❤️‍🔥' : 'ℹ️';
+    heartsBanner.innerHTML = hIcon + ' <b>' + hTitle + '</b> Hoje ' + hParts.join(' e ') + '. Volta ao normal em <b id="heartsCountdownTimer">--:--:--</b>.';
+  }
+
+  if(isBonusRound || isFastRound || pointsChanged || heartsChanged){
     startPointsCountdown();
   } else {
     stopPointsCountdown();
@@ -1435,7 +1471,8 @@ async function startQuiz(){
   await loadSettings();
   const u = usersCache[currentUser];
   const hearts = computeHearts(u);
-  if(hearts.missing >= 3){
+  const maxHearts = (settingsCache && settingsCache.maxHearts) || STANDARD_MAX_HEARTS;
+  if(hearts.missing >= maxHearts){
     showToast('Sem corações disponíveis no momento. Aguarde a recarga.');
     return;
   }
@@ -1547,10 +1584,11 @@ async function finishQuiz(){
   await loadUsers();
   const u = usersCache[currentUser];
   const hearts = computeHearts(u);
+  const maxHeartsF = (settingsCache && settingsCache.maxHearts) || STANDARD_MAX_HEARTS;
   if(hearts.missing === 0){
-    hearts.nextRegenAt = Date.now() + HEART_REGEN_MS;
+    hearts.nextRegenAt = Date.now() + heartRegenMs();
   }
-  hearts.missing = Math.min(3, hearts.missing + 1);
+  hearts.missing = Math.min(maxHeartsF, hearts.missing + 1);
   u.heartsState = hearts;
   // contador diário mantido só como estatística (não bloqueia mais o jogo)
   const t = todayStr();
@@ -1704,6 +1742,8 @@ async function showQuestionsBank(){
   document.getElementById('settingsQuestionsPerRound').value = settingsCache.questionsPerRound;
   document.getElementById('settingsPointsPerCorrect').value = settingsCache.pointsPerCorrect;
   document.getElementById('settingsBonusPoints').value = settingsCache.bonusPoints;
+  document.getElementById('settingsMaxHearts').value = settingsCache.maxHearts;
+  document.getElementById('settingsHeartRegenHours').value = settingsCache.heartRegenHours;
   const remainingMs = settingsCache.specialSettingsExpiresAt ? Math.max(60000, settingsCache.specialSettingsExpiresAt - Date.now()) : 24 * 3600000;
   document.getElementById('settingsDurationHours').value = Math.floor(remainingMs / 3600000);
   document.getElementById('settingsDurationMinutes').value = Math.round((remainingMs % 3600000) / 60000);
@@ -1769,6 +1809,18 @@ async function saveSettingsFromForm(){
   if(bonusVal > 200) bonusVal = 200;
   bonusInput.value = bonusVal;
 
+  const maxHeartsInput = document.getElementById('settingsMaxHearts');
+  let maxHeartsVal = parseInt(maxHeartsInput.value, 10);
+  if(isNaN(maxHeartsVal) || maxHeartsVal < 1) maxHeartsVal = 1;
+  if(maxHeartsVal > 10) maxHeartsVal = 10;
+  maxHeartsInput.value = maxHeartsVal;
+
+  const regenInput = document.getElementById('settingsHeartRegenHours');
+  let regenVal = parseInt(regenInput.value, 10);
+  if(isNaN(regenVal) || regenVal < 1) regenVal = 1;
+  if(regenVal > 48) regenVal = 48;
+  regenInput.value = regenVal;
+
   const durInput = document.getElementById('settingsDurationHours');
   let durVal = parseInt(durInput.value, 10);
   if(isNaN(durVal) || durVal < 0) durVal = 0;
@@ -1788,8 +1840,8 @@ async function saveSettingsFromForm(){
     durMinInput.value = 1;
   }
 
-  const toSave = { questionTime: val, questionsPerRound: qVal, pointsPerCorrect: ppcVal, bonusPoints: bonusVal };
-  const isSpecial = (qVal !== STANDARD_ROUND_SIZE) || (ppcVal !== STANDARD_POINTS_PER_CORRECT) || (bonusVal !== STANDARD_BONUS_POINTS);
+  const toSave = { questionTime: val, questionsPerRound: qVal, pointsPerCorrect: ppcVal, bonusPoints: bonusVal, maxHearts: maxHeartsVal, heartRegenHours: regenVal };
+  const isSpecial = (qVal !== STANDARD_ROUND_SIZE) || (ppcVal !== STANDARD_POINTS_PER_CORRECT) || (bonusVal !== STANDARD_BONUS_POINTS) || (maxHeartsVal !== STANDARD_MAX_HEARTS) || (regenVal !== STANDARD_HEART_REGEN_HOURS);
   if(isSpecial){
     toSave.specialSettingsExpiresAt = Date.now() + durationMs;
   }
