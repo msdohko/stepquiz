@@ -533,6 +533,10 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <label style="margin-top:14px;">Perguntas por rodada</label>
       <input type="number" id="settingsQuestionsPerRound" min="3" max="20" step="1">
       <p class="field-hint">Se for diferente de 5, volta ao padrão sozinho à meia-noite (Brasília).</p>
+      <label style="margin-top:14px;">Pontos por acerto</label>
+      <input type="number" id="settingsPointsPerCorrect" min="1" max="100" step="1">
+      <label style="margin-top:14px;">Bônus por gabaritar a rodada</label>
+      <input type="number" id="settingsBonusPoints" min="0" max="200" step="5">
       <button class="btn btn-outline mt10" onclick="saveSettingsFromForm()">Salvar configurações</button>
     </div>
 
@@ -612,7 +616,7 @@ let quizIndex = 0;
 let quizAnswers = [];        // { question, chosenIndex, correctIndex, correct }
 let usersCache = {};
 let questionsCache = [];
-let settingsCache = { questionTime: 20, questionsPerRound: 5 };
+let settingsCache = { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 };
 const STANDARD_ROUND_SIZE = 5; // acima disso, o app trata como "rodada especial"
 let statsCache = {}; // { [textoDaPergunta]: { wrong: N, total: N } }
 
@@ -767,13 +771,15 @@ async function saveQuestions(arr){
 async function loadSettings(){
   try{
     const val = await fsGet('settings');
-    settingsCache = val ? JSON.parse(val) : (settingsCache || { questionTime: 20, questionsPerRound: 5 });
+    settingsCache = val ? JSON.parse(val) : (settingsCache || { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 });
     storageOk = true;
   }catch(e){
-    settingsCache = settingsCache || { questionTime: 20, questionsPerRound: 5 };
+    settingsCache = settingsCache || { questionTime: 20, questionsPerRound: 5, pointsPerCorrect: 10, bonusPoints: 10 };
   }
   if(!settingsCache.questionTime) settingsCache.questionTime = 20;
   if(!settingsCache.questionsPerRound) settingsCache.questionsPerRound = 5;
+  if(settingsCache.pointsPerCorrect === undefined || settingsCache.pointsPerCorrect === null) settingsCache.pointsPerCorrect = 10;
+  if(settingsCache.bonusPoints === undefined || settingsCache.bonusPoints === null) settingsCache.bonusPoints = 10;
 
   // reverte sozinho pro padrão assim que vira o dia no horário de Brasília
   if(settingsCache.questionsPerRound !== STANDARD_ROUND_SIZE){
@@ -1445,8 +1451,9 @@ async function finishQuiz(){
   clearInterval(quizTimerId);
   const correctCount = quizAnswers.filter(a=>a.isRight).length;
   const perfect = correctCount === quizQuestions.length;
-  const BONUS = 10;
-  const pointsEarned = correctCount * 10 + (perfect ? BONUS : 0);
+  const pointsPerCorrect = (settingsCache && settingsCache.pointsPerCorrect) || 10;
+  const BONUS = (settingsCache && settingsCache.bonusPoints !== undefined) ? settingsCache.bonusPoints : 10;
+  const pointsEarned = correctCount * pointsPerCorrect + (perfect ? BONUS : 0);
 
   await loadUsers();
   const u = usersCache[currentUser];
@@ -1476,7 +1483,7 @@ async function finishQuiz(){
   const passed = correctCount >= Math.ceil(quizQuestions.length * 0.6);
   stamp.classList.toggle('low', !passed);
   document.getElementById('stampScore').textContent = correctCount + '/' + quizQuestions.length;
-  document.getElementById('resultDetail').innerHTML = perfect
+  document.getElementById('resultDetail').innerHTML = (perfect && BONUS > 0)
     ? 'Você ganhou ' + pointsEarned + ' pontos <span class="bonus-tag">🔥 +' + BONUS + ' bônus por gabaritar!</span>'
     : 'Você ganhou ' + pointsEarned + ' pontos.';
 
@@ -1606,6 +1613,8 @@ async function showQuestionsBank(){
   document.getElementById('addQuestionCard').classList.add('hidden');
   document.getElementById('settingsQuestionTime').value = settingsCache.questionTime;
   document.getElementById('settingsQuestionsPerRound').value = settingsCache.questionsPerRound;
+  document.getElementById('settingsPointsPerCorrect').value = settingsCache.pointsPerCorrect;
+  document.getElementById('settingsBonusPoints').value = settingsCache.bonusPoints;
   renderQuestionsBank();
   renderUsersBank();
   renderErrorReport();
@@ -1656,7 +1665,19 @@ async function saveSettingsFromForm(){
   }
   qInput.value = qVal;
 
-  const toSave = { questionTime: val, questionsPerRound: qVal };
+  const ppcInput = document.getElementById('settingsPointsPerCorrect');
+  let ppcVal = parseInt(ppcInput.value, 10);
+  if(isNaN(ppcVal) || ppcVal < 1) ppcVal = 1;
+  if(ppcVal > 100) ppcVal = 100;
+  ppcInput.value = ppcVal;
+
+  const bonusInput = document.getElementById('settingsBonusPoints');
+  let bonusVal = parseInt(bonusInput.value, 10);
+  if(isNaN(bonusVal) || bonusVal < 0) bonusVal = 0;
+  if(bonusVal > 200) bonusVal = 200;
+  bonusInput.value = bonusVal;
+
+  const toSave = { questionTime: val, questionsPerRound: qVal, pointsPerCorrect: ppcVal, bonusPoints: bonusVal };
   if(qVal !== STANDARD_ROUND_SIZE){
     toSave.questionsPerRoundDate = todayStr();
   }
