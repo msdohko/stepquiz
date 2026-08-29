@@ -299,9 +299,9 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
 .qbank-item{ border-bottom:1px solid var(--line); padding:12px 0; }
 .qbank-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 .btn-toggle-list{
-  flex-shrink:0; background:var(--paper-dim); border:1px solid var(--line); border-radius:8px;
-  padding:7px 11px; font-family:var(--body); font-size:12px; font-weight:700; color:var(--brand-green);
-  cursor:pointer; white-space:nowrap;
+  flex-shrink:0; background:var(--paper-dim); border:1px solid var(--line); border-radius:50%;
+  width:32px; height:32px; padding:0; font-family:var(--body); font-size:18px; font-weight:700; color:var(--brand-green);
+  cursor:pointer; white-space:nowrap; display:flex; align-items:center; justify-content:center; line-height:1;
 }
 .qbank-collapsed{ max-height:260px; overflow-y:auto; }
 .report-item{ border-bottom:1px solid var(--line); padding:11px 0; }
@@ -532,7 +532,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
       <div class="ledger-tab">Admin</div>
       <div class="qbank-header">
         <h1 class="page-title" style="margin-bottom:0;">Configurações</h1>
-        <button class="btn-toggle-list" id="settingsToggleBtn" onclick="toggleSettingsFields()">Expandir ▾</button>
+        <button class="btn-toggle-list" id="settingsToggleBtn" onclick="toggleSettingsFields()">+</button>
       </div>
       <div id="settingsFieldsWrap" class="hidden">
       <label style="margin-top:14px;">Tempo por pergunta (segundos)</label>
@@ -570,7 +570,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
           <h1 class="page-title" style="margin-bottom:2px;">Perguntas mais erradas</h1>
           <p class="page-sub" id="reportSub" style="margin-bottom:0;">Carregando…</p>
         </div>
-        <button class="btn-toggle-list" id="reportToggleBtn" onclick="toggleErrorReportList()">Expandir ▾</button>
+        <button class="btn-toggle-list" id="reportToggleBtn" onclick="toggleErrorReportList()">+</button>
       </div>
       <div id="errorReportList" class="qbank-collapsed"></div>
     </div>
@@ -582,7 +582,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
           <h1 class="page-title" style="margin-bottom:2px;">Perguntas do quiz</h1>
           <p class="page-sub" id="qbankCount" style="margin-bottom:0;">0 perguntas cadastradas</p>
         </div>
-        <button class="btn-toggle-list" id="qbankToggleBtn" onclick="toggleQbankList()">Expandir ▾</button>
+        <button class="btn-toggle-list" id="qbankToggleBtn" onclick="toggleQbankList()">+</button>
       </div>
       <div id="qbankList" class="qbank-collapsed"></div>
       <button class="btn btn-outline mt16" onclick="showAddQuestionForm()">+ Adicionar pergunta</button>
@@ -606,7 +606,7 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
           <h1 class="page-title" style="margin-bottom:2px;">Usuários cadastrados</h1>
           <p class="page-sub" id="userbankCount" style="margin-bottom:0;">0 pessoas cadastradas</p>
         </div>
-        <button class="btn-toggle-list" id="userbankToggleBtn" onclick="toggleUserbankList()">Expandir ▾</button>
+        <button class="btn-toggle-list" id="userbankToggleBtn" onclick="toggleUserbankList()">+</button>
       </div>
       <div id="userbankList" class="qbank-collapsed"></div>
       <button class="btn btn-outline mt16" id="resetUsersBtn" onclick="askResetUsers(this)">Resetar todos os cadastros (exceto admin)</button>
@@ -1978,28 +1978,28 @@ function toggleQbankList(){
   const list = document.getElementById('qbankList');
   const btn = document.getElementById('qbankToggleBtn');
   const collapsed = list.classList.toggle('qbank-collapsed');
-  btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
+  btn.textContent = collapsed ? '+' : '−';
 }
 
 function toggleErrorReportList(){
   const list = document.getElementById('errorReportList');
   const btn = document.getElementById('reportToggleBtn');
   const collapsed = list.classList.toggle('qbank-collapsed');
-  btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
+  btn.textContent = collapsed ? '+' : '−';
 }
 
 function toggleSettingsFields(){
   const wrap = document.getElementById('settingsFieldsWrap');
   const btn = document.getElementById('settingsToggleBtn');
   const hidden = wrap.classList.toggle('hidden');
-  btn.textContent = hidden ? 'Expandir ▾' : 'Recolher ▴';
+  btn.textContent = hidden ? '+' : '−';
 }
 
 function toggleUserbankList(){
   const list = document.getElementById('userbankList');
   const btn = document.getElementById('userbankToggleBtn');
   const collapsed = list.classList.toggle('qbank-collapsed');
-  btn.textContent = collapsed ? 'Expandir ▾' : 'Recolher ▴';
+  btn.textContent = collapsed ? '+' : '−';
 }
 
 function renderQuestionsBank(){
