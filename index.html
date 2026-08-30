@@ -609,7 +609,8 @@ textarea{ resize:vertical; font-family:var(--mono); font-size:13px; }
         <button class="btn-toggle-list" id="userbankToggleBtn" onclick="toggleUserbankList()">+</button>
       </div>
       <div id="userbankList" class="qbank-collapsed"></div>
-      <button class="btn btn-outline mt16" id="resetUsersBtn" onclick="askResetUsers(this)">Resetar todos os cadastros (exceto admin)</button>
+      <button class="btn btn-outline mt16" id="resetScoresBtn" onclick="askResetScores(this)">Zerar pontuação de todos (mantém cadastro)</button>
+      <button class="btn btn-outline mt10" id="resetUsersBtn" onclick="askResetUsers(this)">Resetar todos os cadastros (exceto admin)</button>
     </div>
 
     <div class="card">
@@ -1941,6 +1942,40 @@ async function removeUser(name){
   await saveUsers(usersCache);
   renderUsersBank();
   showToast('Usuário "' + name + '" removido.');
+}
+
+function askResetScores(btn){
+  if(btn.dataset.armed === '1'){
+    resetAllScores();
+    return;
+  }
+  btn.dataset.armed = '1';
+  btn.textContent = 'Tem certeza? Toque de novo pra confirmar';
+  btn.classList.add('btn-reset-armed');
+  setTimeout(()=>{
+    if(btn.dataset.armed === '1'){
+      btn.dataset.armed = '0';
+      btn.textContent = 'Zerar pontuação de todos (mantém cadastro)';
+      btn.classList.remove('btn-reset-armed');
+    }
+  }, 4000);
+}
+
+async function resetAllScores(){
+  await loadUsers();
+  Object.keys(usersCache).forEach(name=>{
+    const u = usersCache[name];
+    u.scoreTotal = 0;
+    u.quizzesTaken = 0;
+    delete u.lastKnownRank;
+  });
+  await saveUsers(usersCache);
+  const btn = document.getElementById('resetScoresBtn');
+  btn.dataset.armed = '0';
+  btn.textContent = 'Zerar pontuação de todos (mantém cadastro)';
+  btn.classList.remove('btn-reset-armed');
+  renderUsersBank();
+  showToast('Pontuação de todo mundo foi zerada. Cadastros, senhas e equipes continuam intactos.');
 }
 
 function askResetUsers(btn){
