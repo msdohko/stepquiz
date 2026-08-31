@@ -18,17 +18,18 @@ Cada pessoa cria um cadastro simples (usuário, senha, equipe), responde rodadas
 - **Usuário separado do nome de exibição** — login com um usuário curto, enquanto o ranking mostra o nome completo da pessoa (evita ambiguidade entre colegas com o mesmo primeiro nome)
 - **Quiz cronometrado** — rodadas de 5 perguntas de múltipla escolha, com 20s por pergunta (configurável pelo admin)
 - **Sistema de pontuação** — 10 pontos por acerto + bônus de 10 pontos por gabaritar a rodada
-- **Sistema de corações (estilo Duolingo)** — 3 tentativas representadas por corações; cada coração usado regenera individualmente 8h depois, em fila (o 1º volta em 8h, o 2º em 16h, o 3º em 24h, contados a partir da primeira perda), com contador regressivo ao vivo mostrando quando o próximo coração chega
+- **Sistema de corações (estilo Duolingo)** — tentativas representadas por corações; cada coração usado regenera individualmente em fila (o 1º volta primeiro, o 2º depois, e assim por diante, contados a partir da primeira perda), com contador regressivo ao vivo mostrando quando o próximo coração chega
 - **Revisão de erros** — ao final de cada rodada, a pessoa vê exatamente quais perguntas errou e qual era a resposta certa, reforçando o aprendizado (não só a pontuação)
 - **Ranking ao vivo** — pódio (🥇🥈🥉) individual e por equipe, com lista completa expansível e tratamento de empates (mesma pontuação = mesma posição)
-- **Painel administrativo** — restrito a um usuário admin, permite:
-  - Gerenciar o banco de perguntas (adicionar/remover) sem precisar reimplantar o site, com lista recolhível/expansível pra não poluir a tela
-  - Ajustar o tempo por pergunta em tempo real
+- **Painel administrativo totalmente configurável** — restrito a um usuário admin, permite:
+  - Ajustar tempo por pergunta, quantidade de perguntas por rodada, pontos por acerto, bônus por rodada perfeita, quantidade máxima de corações e horas de recarga de cada um
+  - Rodar **promoções temporárias** em qualquer uma dessas configurações (ex: "rodada especial" com mais perguntas, "pontuação turbinada", "corações extra" — que aparecem em dourado no lugar dos vermelhos padrão), com duração escolhida em horas e minutos e revertendo sozinho ao normal quando o tempo acaba, avisando o time com banners na tela inicial e contador regressivo ao vivo
+  - Gerenciar o banco de perguntas (adicionar/remover), com lista recolhível/expansível pra não poluir a tela
   - Ver um **relatório das perguntas mais erradas pelo time**, com percentual de erro e volume de respostas — ajuda a saber onde reforçar o treinamento antes da auditoria de verdade
-  - Remover cadastros e resetar o ranking pra reiniciar testes
+  - **Resetar senha** ou **editar o usuário** de qualquer pessoa sem perder pontuação nem histórico
+  - **Zerar a pontuação de todo mundo mantendo os cadastros** (útil pra reiniciar uma "temporada" de competição) ou, se precisar mesmo, resetar todos os cadastros por completo
 - **Senhas protegidas** — senhas nunca são salvas em texto puro; usam hash SHA-256 com salt único por pessoa (contas antigas são migradas automaticamente no próximo login)
 - **Recuperação de senha assistida pelo admin** — a pessoa que esquece a senha não precisa criar uma conta nova (evitando duplicidade e perda de pontos): o admin reseta a senha dela pelo painel, e no próximo login ela é obrigada a criar uma senha só sua antes de continuar. A tela de login também tem um link "Esqueci minha senha" explicando esse caminho. Qualquer pessoa também pode trocar a própria senha por vontade própria a qualquer momento
-- **Admin pode editar o usuário de qualquer pessoa** — útil pra corrigir cadastros duplicados ou ajustar o nome de login sem perder pontuação nem histórico
 - **Foto de perfil real (opcional)** — no cadastro ou a qualquer momento depois, a pessoa pode adicionar uma foto própria; sem foto, o avatar mostra as iniciais do nome com cor gerada automaticamente, como sempre
 - **Aviso de mudança no ranking** — ao abrir o painel, o app avisa se a pessoa subiu ou caiu de posição desde a última visita ("você foi ultrapassado!" ou "você subiu!"), reforçando o engajamento sem precisar de notificação push
 - **Identidade visual sob medida** — cores, logo e tipografia adaptadas ao material oficial de segurança da empresa
@@ -72,14 +73,18 @@ timeline
     Fase 6 — Personalização e dados : Relatório de perguntas mais erradas
                         : Foto de perfil opcional
                         : Aviso de mudança de posição no ranking
-    Próxima fase : Domínio próprio
+    Fase 7 — Painel admin configurável : Perguntas, pontos, bônus e corações ajustáveis
+                        : Promoções temporárias com duração e contador ao vivo
+                        : Reset de senha, edição de usuário e zerar pontuação sem apagar cadastro
+    Próxima fase : Lista fixa de equipes (evitar duplicidade no cadastro)
+                 : Domínio próprio
                  : Histórico de erros por pessoa
                  : Versão em inglês
 ```
 
 ## 🔀 Fluxo de decisões do app
 
-Um mapa de como o app decide o que mostrar em cada situação — do primeiro acesso até a pontuação final. Essas imagens são desenhos de verdade (SVG), então aparecem certinho em qualquer lugar que você abrir o README, não só no GitHub.
+Um mapa de como o app decide o que mostrar em cada situação — do primeiro acesso até a pontuação final. Essas imagens são desenhos de verdade (SVG), então aparecem certinho em qualquer lugar que você abrir o README, não só no GitHub — e também podem ser arrastadas direto pro Figma como vetores editáveis, caso queira adaptar.
 
 **Acesso, cadastro e login:**
 
@@ -127,6 +132,7 @@ Mobile-first, pensado para ser usado majoritariamente no celular. Identidade vis
 
 Algumas ideias mapeadas para uma próxima versão:
 
+- **Lista fixa de equipes** — hoje a pessoa digita o nome da equipe livremente no cadastro, o que pode gerar duplicidade no ranking por equipe (ex: "Segurança" e "SEGURANCA" contando como equipes diferentes). O admin poderia definir a lista oficial, virando um menu de seleção.
 - **Domínio personalizado** — trocar o link padrão do GitHub Pages por um domínio próprio, mais fácil de divulgar.
 - **Histórico de erros por pessoa** — o relatório de erros hoje é agregado (o time todo); mostrar pra cada pessoa individualmente quais perguntas ela mais erra ao longo do tempo tornaria o reforço ainda mais direcionado.
 - **Versão em inglês** — tanto da interface quanto deste README, pensando em portfólio internacional.
